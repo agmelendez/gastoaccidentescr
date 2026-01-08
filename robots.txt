@@ -1,0 +1,70 @@
+# robots.txt para Proyecto Accidentes de Tránsito Costa Rica
+# Universidad de Costa Rica - Observatorio del Desarrollo
+
+# Permitir acceso a todos los bots principales
+User-agent: *
+Allow: /
+
+# Páginas específicas permitidas
+Allow: /index.html
+Allow: /*.css
+Allow: /*.js
+Allow: /imagenes/
+
+# Denegar acceso a directorios de datos y cálculos
+Disallow: /CALCULOS/
+Disallow: /DATOS/
+Disallow: /.git/
+Disallow: /BICIMOTOS/
+Disallow: /nuevos/
+
+# Denegar archivos de configuración
+Disallow: /*.Rmd
+Disallow: /*.RData
+Disallow: /*.rdata
+Disallow: /.htaccess
+Disallow: /nginx-security.conf
+
+# Permitir descarga de documentos públicos
+Allow: /AVPP y AVAP/*.pdf
+Allow: /AVPP y AVAP/*.csv
+Allow: /Costos Atención/*.pdf
+
+# Bots específicos - Google
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+# Bots específicos - Bing
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Bots específicos - Yahoo
+User-agent: Slurp
+Allow: /
+Crawl-delay: 1
+
+# Bots académicos
+User-agent: Googlebot-Scholar
+Allow: /
+
+# Denegar bots maliciosos conocidos
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Sitemap (actualizar con la URL real en producción)
+# Sitemap: https://tu-dominio.com/sitemap.xml
+
+# Información adicional
+# Host: https://tu-dominio.com
+# Contact: observatorio@ucr.ac.cr

@@ -1,0 +1,257 @@
+# ============================================
+# Configuración de Seguridad Apache
+# Proyecto: Accidentes de Tránsito Costa Rica
+# Universidad de Costa Rica
+# ============================================
+
+# Deshabilitar listado de directorios
+Options -Indexes
+
+# Habilitar FollowSymLinks si es necesario
+Options +FollowSymLinks
+
+# Protección contra ataques comunes
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Bloquear acceso a archivos sensibles
+    RewriteRule ^\.git/ - [F,L]
+    RewriteRule ^\.htaccess$ - [F,L]
+    RewriteRule ^\.htpasswd$ - [F,L]
+
+    # Bloquear intentos de inyección SQL en URLs
+    RewriteCond %{QUERY_STRING} (\<|%3C).*script.*(\>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} _REQUEST(=|\[|\%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} (\.\./|\.\.\\) [OR]
+    RewriteCond %{QUERY_STRING} (union|select|insert|drop|delete|update|cast|create|char|convert|alter|declare|exec|script) [NC]
+    RewriteRule ^(.*)$ - [F,L]
+
+    # Forzar HTTPS (descomentar en producción)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# ============================================
+# Headers de Seguridad HTTP
+# ============================================
+
+<IfModule mod_headers.c>
+    # Prevenir clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Prevenir MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Habilitar protección XSS del navegador
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Política de referencia
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Content Security Policy
+    Header always set Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; script-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self';"
+
+    # Permissions Policy (antes Feature Policy)
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+
+    # Strict Transport Security (HSTS) - solo para HTTPS
+    # Descomentar cuando uses HTTPS en producción
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # Eliminar información del servidor
+    Header unset Server
+    Header unset X-Powered-By
+</IfModule>
+
+# ============================================
+# Protección de Archivos y Directorios
+# ============================================
+
+# Denegar acceso a archivos de configuración
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Proteger archivos sensibles
+<FilesMatch "(\.(bak|config|dist|fla|inc|ini|log|psd|sh|sql|swp|md|Rmd|RData|rdata)|~)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Permitir acceso solo a archivos necesarios
+<FilesMatch "\.(html|css|js|png|jpg|jpeg|gif|svg|ico|pdf|csv|xlsx|xls|docx|doc)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# ============================================
+# Configuración de Tipos MIME
+# ============================================
+
+<IfModule mod_mime.c>
+    # HTML
+    AddType text/html .html .htm
+
+    # CSS
+    AddType text/css .css
+
+    # JavaScript
+    AddType application/javascript .js
+
+    # Imágenes
+    AddType image/jpeg .jpg .jpeg
+    AddType image/png .png
+    AddType image/gif .gif
+    AddType image/svg+xml .svg
+    AddType image/x-icon .ico
+
+    # Documentos
+    AddType application/pdf .pdf
+    AddType text/csv .csv
+    AddType application/vnd.ms-excel .xls
+    AddType application/vnd.openxmlformats-officedocument.spreadsheetml.sheet .xlsx
+    AddType application/msword .doc
+    AddType application/vnd.openxmlformats-officedocument.wordprocessingml.document .docx
+
+    # Texto
+    AddType text/plain .txt .md
+
+    # Deshabilitar descarga de tipos potencialmente peligrosos
+    AddType application/octet-stream .exe .dll .bat .cmd .sh
+</IfModule>
+
+# ============================================
+# Compresión de Archivos
+# ============================================
+
+<IfModule mod_deflate.c>
+    # Comprimir HTML, CSS, JavaScript, Text, XML
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/json
+</IfModule>
+
+# ============================================
+# Cache de Navegador
+# ============================================
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    # Por defecto: 1 mes
+    ExpiresDefault "access plus 1 month"
+
+    # HTML: sin cache
+    ExpiresByType text/html "access plus 0 seconds"
+
+    # CSS y JavaScript: 1 año
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+
+    # Imágenes: 1 año
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+
+    # Documentos: 1 mes
+    ExpiresByType application/pdf "access plus 1 month"
+    ExpiresByType text/csv "access plus 1 month"
+</IfModule>
+
+# ============================================
+# Prevención de Hotlinking de Imágenes
+# ============================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Permitir acceso vacío (directo) y desde el mismo dominio
+    # Descomentar y ajustar en producción
+    # RewriteCond %{HTTP_REFERER} !^$
+    # RewriteCond %{HTTP_REFERER} !^https?://(www\.)?tu-dominio\.com [NC]
+    # RewriteRule \.(jpg|jpeg|png|gif|svg)$ - [F]
+</IfModule>
+
+# ============================================
+# Protección contra DoS básica
+# ============================================
+
+<IfModule mod_reqtimeout.c>
+    # Limitar tiempo de request
+    RequestReadTimeout header=20-40,MinRate=500 body=20,MinRate=500
+</IfModule>
+
+<IfModule mod_evasive.c>
+    # Configuración de mod_evasive si está disponible
+    DOSHashTableSize 3097
+    DOSPageCount 5
+    DOSSiteCount 100
+    DOSPageInterval 1
+    DOSSiteInterval 1
+    DOSBlockingPeriod 60
+</IfModule>
+
+# ============================================
+# Prevenir acceso directo a directorios
+# ============================================
+
+# Si no existe index.html, denegar acceso
+DirectoryIndex index.html
+
+<IfModule mod_autoindex.c>
+    # Deshabilitar listado de directorios
+    Options -Indexes
+</IfModule>
+
+# ============================================
+# Protección adicional de archivos R y datos
+# ============================================
+
+# Denegar acceso a archivos de R
+<FilesMatch "\.(Rmd|RData|rdata|rds|RDS)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Permitir descarga de CSV (opcional, comentar si no deseas)
+<FilesMatch "\.csv$">
+    Order allow,deny
+    Allow from all
+    ForceType application/octet-stream
+    Header set Content-Disposition attachment
+</FilesMatch>
+
+# ============================================
+# Charset UTF-8
+# ============================================
+
+<IfModule mod_mime.c>
+    AddDefaultCharset UTF-8
+    AddCharset UTF-8 .html .css .js .xml .json .txt
+</IfModule>
+
+# ============================================
+# Logs de Errores (configurar según necesidad)
+# ============================================
+
+# php_flag display_errors off
+# php_flag log_errors on
+# php_value error_log /path/to/error.log
+
+# ============================================
+# Información del Servidor
+# ============================================
+
+ServerSignature Off
+
+# ============================================
+# Fin de Configuración
+# ============================================
