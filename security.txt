@@ -1,0 +1,30 @@
+# Archivo de Política de Seguridad
+# RFC 9116 - security.txt
+# Universidad de Costa Rica - Observatorio del Desarrollo
+# Proyecto: Accidentes de Tránsito en Costa Rica
+
+Contact: mailto:seguridad@ucr.ac.cr
+Contact: mailto:observatorio@ucr.ac.cr
+
+Expires: 2026-12-31T23:59:59.000Z
+
+Preferred-Languages: es, en
+
+# Proceso de divulgación
+Policy: https://github.com/usuario/gastoaccidentescr/blob/main/SECURITY.md
+
+# Agradecimientos por reportes de seguridad
+Acknowledgments: https://github.com/usuario/gastoaccidentescr/blob/main/SECURITY.md#agradecimientos
+
+# Información de la organización
+Canonical: https://tu-dominio.com/.well-known/security.txt
+
+# Encriptación (agregar clave PGP si está disponible)
+# Encryption: https://tu-dominio.com/pgp-key.txt
+
+# Información adicional
+# Este proyecto es mantenido por la Universidad de Costa Rica
+# Centro de Investigación Observatorio del Desarrollo
+#
+# Por favor reportar vulnerabilidades de forma responsable
+# Tiempo de respuesta esperado: 48 horas hábiles
