@@ -1,0 +1,106 @@
+---
+title: "Visualizaciones"
+author: "Fernanda"
+date: "2025-09-22"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+library(readr)
+personas <- read_delim("~/Desktop/Practica I/CIOdD/DATOS/COSEVI/personas.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r}
+str(personas)
+```
+
+```{r}
+library(dplyr)
+
+victimas_por_año <- personas %>%
+  group_by(Año) %>%
+  summarise(Cantidad = n())
+victimas_por_año
+
+```
+
+```{r}
+library(forecast)
+library(dplyr)
+
+# Tu serie histórica
+años <- 2017:2023
+cantidad <- c(33229, 33397, 32860, 24553, 29700, 33408, 35903)
+serie_victimas <- ts(cantidad, start = 2017, frequency = 1)
+
+# Ajustar modelo ETS (suavizamiento exponencial)
+modelo_ets <- ets(serie_victimas)
+pred_ets <- forecast(modelo_ets, h = 2)  # h=2 para 2024 y 2025
+
+# Pequeña tendencia lineal basada en últimos 3 años
+ultimos <- tail(cantidad, 3)  # 2021, 2022, 2023
+tendencia_anual <- (ultimos[3] - ultimos[1]) / 2  # diferencia anual promedio
+
+# Aplicar tendencia sobre predicción ETS
+victimas_tendencia <- victimas_base <- as.numeric(pred_ets$mean)
+victimas_tendencia[1] <- victimas_base[1] + tendencia_anual  # 2024
+victimas_tendencia[2] <- victimas_tendencia[1] + tendencia_anual  # 2025
+
+# Intervalos de confianza
+LI <- pmax(0, victimas_tendencia - (victimas_base - as.numeric(pred_ets$lower[,2])))
+LS <- victimas_tendencia + (as.numeric(pred_ets$upper[,2]) - victimas_base)
+
+# Tabla final de proyecciones
+proyecciones_victimas <- data.frame(
+  Año = 2024:2025,
+  Cantidad = round(victimas_tendencia,0),
+  LI = round(LI,0),
+  LS = round(LS,0)
+)
+
+
+```
+
+```{r}
+# Serie histórica
+años <- 2017:2023
+cantidad <- c(33229, 33397, 32860, 24553, 29700, 33408, 35903)
+
+# Proyección ETS + tendencia
+serie_victimas <- ts(cantidad, start = 2017, frequency = 1)
+modelo_ets <- ets(serie_victimas)
+pred_ets <- forecast(modelo_ets, h = 2)
+
+ultimos <- tail(cantidad, 3)
+tendencia_anual <- (ultimos[3] - ultimos[1])/2
+
+victimas_tendencia <- as.numeric(pred_ets$mean)
+victimas_tendencia[1] <- victimas_tendencia[1] + tendencia_anual
+victimas_tendencia[2] <- victimas_tendencia[1] + tendencia_anual
+
+# Combinar todo
+años_todo <- 2017:2025
+cantidad_todo <- c(cantidad, victimas_tendencia)
+
+# Crear gráfico base mostrando todos los años en el eje X
+plot(años_todo, cantidad_todo, type = "n", xlab = "Año", ylab = "Cantidad de víctimas",
+     ylim = c(min(cantidad_todo), max(cantidad_todo)),
+     xaxt = "n") # quitamos ejes para personalizarlos
+
+# Agregar eje X con todos los años
+axis(1, at = 2017:2025)
+
+# Línea continua histórica + proyección
+lines(2017:2025, cantidad_todo, col = "black", lwd = 2)
+
+# Resaltar proyección en azul (2024 y 2025)
+lines(2023:2025, c(cantidad[7], victimas_tendencia), col = "blue", lwd = 2)
+
+# Leyenda
+legend("topleft", legend = c("Histórico", "Proyección"),
+       col = c("black", "blue"), lwd = 2, pch = 16)
+
+```
+

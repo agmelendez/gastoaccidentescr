@@ -1,0 +1,350 @@
+---
+title: "CODIGO BASE PARA MANEJO DE DATOS"
+author: "Fernanda"
+date: "2025-07-10"
+output: html_document
+---
+##BASICOS
+```{r}
+# Ejemplo si tu base se llama 'victimas' como sacar promedio de edad
+victimas %>%
+  group_by(`Tipo_lesion`) %>%
+  summarise(edad_prom = mean(Edad, na.rm = TRUE))
+```
+
+##INDICADORES
+TABLA ESPERANZA DE VIDA
+```{r}
+# Crear tabla de esperanza de vida
+esperanza_vida_cr <- data.frame(
+  año = 2017:2025,
+  total = c( 79.91, 80.08, 80.16, 79.70, 77.96, 79.17, 80.77, 80.91, 81.05),
+  hombres = c( 77.48, 77.43, 77.78, 76.91, 75.08, 76.55, 78.33, 78.45, 78.57),
+  mujeres = c( 82.35, 82.72, 82.54, 82.48, 80.84, 81.78, 83.22, 83.38, 83.53)
+)
+
+```
+
+UNIR TABLA A LA BASE 
+```{r}
+library(dplyr)
+
+# Unir esperanza de vida según año y sexo
+base <- base %>%
+  left_join(esperanza_vida_cr, by = c("año" = "año")) %>%
+  mutate(esperanza_vida = case_when(
+    sexo == "Hombre" ~ hombres,
+    sexo == "Mujer"  ~ mujeres,
+    TRUE ~ total  # Por si hay datos sin sexo específico
+  ))
+```
+
+*AVPP*
+```{r}
+# AVPP se calcula solo para personas fallecidas
+base <- base %>%
+  mutate(
+    avpp_ind = ifelse(lesion == "Fallecido",
+                      pmax(esperanza_vida - edad, 0),  # no permitir valores negativos
+                      0)
+  )
+
+# AVPP total
+AVPP_total <- sum(base$avpp_ind, na.rm = TRUE)
+
+# Si querés por año y sexo
+AVPP_por_ano_sexo <- base %>%
+  group_by(anio, sexo) %>%
+  summarise(AVPP = sum(avpp_ind, na.rm = TRUE)) %>%
+  ungroup()
+
+```
+
+```{r}
+#para pasar a Power BI
+library(writexl)
+write_xlsx(AVPP_por_ano_sexo, "AVPP_por_ano_sexo.xlsx")
+```
+
+*Ajustar AVAD *
+```{r}
+
+# Calcular AVD (años vividos con discapacidad)
+base <- base %>%
+  mutate(
+    AVD = ifelse(discapacidad == TRUE,
+                 peso_discapacidad * duracion_discapacidad,
+                 0)
+  )
+
+# AVAD total = AVPP total + suma de AVD
+AVAD_total <- AVPP_total + sum(base$AVD, na.rm = TRUE)
+
+# Si querés AVAD por año y sexo:
+AVAD_por_ano_sexo <- base %>%
+  group_by(anio, sexo) %>%
+  summarise(
+    AVPP = sum(avpp_ind, na.rm = TRUE),
+    AVD = sum(AVD, na.rm = TRUE),
+    AVAD = AVPP + AVD
+  ) %>%
+  ungroup()
+```
+
+```{r}
+#para pasar a Power BI
+library(writexl)
+write_xlsx(AVAD_por_ano_sexo, "AVAD_por_ano_sexo.xlsx")
+```
+
+
+##MODELO DE COSTOS 
+*Costos Directos (hospital, ambulancia, etc.)*
+```{r}
+# Suma simple si tienes ya los valores por persona
+costo_directo_total <- sum(base$costo_médico, na.rm = TRUE)
+
+# Ver
+costo_directo_total
+
+```
+*Costos Indirectos (pérdida de productividad por fallecimiento o discapacidad)*
+```{r}
+# Asume pérdida total del ingreso futuro por muerte o parcial por discapacidad
+
+# Pérdida por fallecidos
+costo_indirecto_muertes <- base %>%
+  filter(lesion == "Fallecido") %>%
+  mutate(perdida_ingresos = (esperanza_vida - edad) * ingreso_promedio_anual,
+         perdida_ingresos = ifelse(perdida_ingresos < 0, 0, perdida_ingresos)) %>%
+  summarise(total = sum(perdida_ingresos, na.rm = TRUE)) %>%
+  pull(total)
+
+# Pérdida por discapacidad
+costo_indirecto_discapacidad <- base %>%
+  filter(discapacidad == TRUE) %>%
+  mutate(perdida = peso_discapacidad * duracion_discapacidad * ingreso_promedio_anual) %>%
+  summarise(total = sum(perdida, na.rm = TRUE)) %>%
+  pull(total)
+
+# Total de costos indirectos
+costo_indirecto_total <- costo_indirecto_muertes + costo_indirecto_discapacidad
+
+# Ver
+costo_indirecto_total
+
+```
+
+*Costo total estimado y proporción del PIB*
+```{r}
+# Suma total de costos
+costo_total <- costo_directo_total + costo_indirecto_total
+
+# Si conoces el PIB anual (en colones)
+PIB_anual <- 44000000000000  # ejemplo en colones
+
+# Proporción del PIB
+proporcion_PIB <- (costo_total / PIB_anual) * 100
+
+# Ver
+proporcion_PIB
+```
+
+
+
+*Para pasar a power Bi*
+```{r}
+costo_resumen <- data.frame(
+  categoria = c("Costos directos", "Costos indirectos", "Costo total", "Proporción del PIB (%)"),
+  valor = c(costo_directo_total, costo_indirecto_total, costo_total, proporcion_PIB)
+)
+
+# Exportar a CSV
+write.csv(costo_resumen, "costos_totales.csv", row.names = FALSE)
+
+```
+
+```{r}
+costo_por_anio <- base %>%
+  group_by(anio) %>%
+  summarise(
+    costo_directo = sum(costo_médico, na.rm = TRUE),
+    costo_indirecto_muertes = sum(ifelse(lesion == "Fallecido",
+                                         (esperanza_vida - edad) * ingreso_promedio_anual, 0), na.rm = TRUE),
+    costo_indirecto_discapacidad = sum(ifelse(discapacidad,
+                                              peso_discapacidad * duracion_discapacidad * ingreso_promedio_anual, 0), na.rm = TRUE)
+  ) %>%
+  mutate(
+    costo_indirecto_total = costo_indirecto_muertes + costo_indirecto_discapacidad,
+    costo_total = costo_directo + costo_indirecto_total
+  )
+
+```
+
+*Opcion 2* 
+```{r}
+# Simulamos una base básica
+casos=base
+# Reglas para clasificar servicios usados
+casos$ambulancia <- dplyr::case_when(
+  casos$tipo_lesion == "muerto" ~ "tipo_A",
+  casos$tipo_lesion == "grave" ~ "tipo_B",
+  casos$tipo_lesion == "leve" ~ "tipo_C",
+  TRUE ~ "ninguna"
+)
+
+casos$rescate <- ifelse(casos$tipo_lesion %in% c("muerto", "grave"), TRUE, FALSE)
+
+# Costos por tipo
+costos_ambulancia <- list(
+  tipo_A = 160000,
+  tipo_B = 100000,
+  tipo_C = 70000,
+  ninguna = 0
+)
+
+costo_rescate <- 150000
+
+# Cálculo de AVPP (años potenciales perdidos por muerte)
+esperanza_vida <- 80
+casos$avpp <- ifelse(casos$tipo_lesion == "muerto", esperanza_vida - casos$edad, 0)
+
+# AVAD simulada para lesiones graves
+casos$peso_discapacidad <- ifelse(casos$tipo_lesion == "grave", 0.3, 0)
+casos$avad <- ifelse(casos$tipo_lesion == "grave", 5, 0)  # 5 años con discapacidad (supuesto)
+
+# Asignación de costos
+casos$costo_ambulancia <- unlist(costos_ambulancia[casos$ambulancia])
+casos$costo_rescate <- ifelse(casos$rescate, costo_rescate, 0)
+
+# Costos médicos (supuestos)
+casos$costo_medico <- dplyr::case_when(
+  casos$tipo_lesion == "muerto" ~ 1_000_000,
+  casos$tipo_lesion == "grave" ~ 5_000_000,
+  casos$tipo_lesion == "leve" ~ 300_000,
+  TRUE ~ 0
+)
+
+# Costos indirectos
+casos$costo_avpp <- casos$avpp * casos$ingreso_anual
+casos$costo_avad <- casos$avad * casos$ingreso_anual * casos$peso_discapacidad
+
+# Costo total por caso
+casos$costo_total <- rowSums(casos[, c("costo_ambulancia", "costo_rescate", "costo_medico", "costo_avpp", "costo_avad")])
+
+# Resultado agregado
+total_costo <- sum(casos$costo_total)
+cat("Costo total estimado:", prettyNum(total_costo, big.mark = ","), "colones\n")
+
+```
+
+```{r}
+#Costos totales por año
+library(dplyr)
+
+costos_anuales <- casos %>%
+  group_by(año) %>%
+  summarise(costo_total = sum(costo_total, na.rm = TRUE)) %>%
+  left_join(pib_anual, by = c("año" = "anio")) %>%
+  mutate(porcentaje_pib = 100 * costo_total / pib_nominal)
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(costos_anuales, aes(x = año, y = porcentaje_pib)) +
+  geom_line() + geom_point() +
+  labs(title = "Costo total de accidentes como % del PIB (2017–2025)",
+       x = "Año", y = "% del PIB") +
+  theme_minimal()
+```
+
+##En caso de que haya que agrupar bases
+ Paso 1: Preparar la base soa
+```{r}
+library(dplyr)
+
+# Limpiar y agrupar los tipos de vehículo
+soa <- soa %>%
+  mutate(
+    año = Año,
+    mes = Mes,
+    fallecidos_moto = Motos + `Bicimotos, cuadraciclos y UTV`,
+    fallecidos_autobus = `Autobuses, busetas, microbuses transporte remunerado de personas` +
+                         `Autobuses, busetas o microbuses destinados al uso particular`,
+    fallecidos_particular = Particular,
+    fallecidos_carga = `Carga Liviana` + `Carga Pesada`,
+    fallecidos_total = Total
+  ) %>%
+  select(año, mes, fallecidos_moto, fallecidos_autobus, fallecidos_particular,
+         fallecidos_carga, fallecidos_total)
+
+```
+ 
+  Paso 2: Preparar victimas
+```{r}
+# Variables mínimas necesarias
+# Año, Mes, Tipo_vehiculo, Tipo_lesion
+
+victimas <- victimas %>%
+  mutate(
+    lesion_grave = ifelse(`Tipo_lesion` == "Muerto o herido grave", 1, 0),
+    herido_leve = ifelse(`Tipo_lesion` == "Herido leve", 1, 0)
+  )
+
+```
+  
+ Paso 3: Agregar número de fallecidos desde soa
+```{r}
+# Ejemplo para motos
+victimas_motos <- victimas %>%
+  filter(`Tipo_vehiculo` == "Moto") %>%
+  group_by(Año, Mes) %>%
+  summarise(graves_total = sum(lesion_grave)) %>%
+  left_join(soa %>% select(año, mes, fallecidos_moto), 
+            by = c("Año" = "año", "Mes" = "mes")) %>%
+  mutate(
+    fallecidos_reales = ifelse(is.na(fallecidos_moto), 0, fallecidos_moto),
+    heridos_graves_estimados = pmax(graves_total - fallecidos_reales, 0)
+  )
+
+```
+ Paso 4: Calcular AVPP
+
+Supongamos:
+
+Edad promedio al morir: edad_prom_moto = 27
+Esperanza de vida: esperanza_vida = 80
+```{r}
+edad_prom_moto <- 27
+esperanza_vida <- 80
+
+victimas_motos <- victimas_motos %>%
+  mutate(
+    AVPP = fallecidos_reales * (esperanza_vida - edad_prom_moto)
+  )
+
+```
+ 
+##Juntar bases
+```{r}
+library(dplyr)
+
+# Primero: asegurarse de que Mes tenga el mismo formato
+victimas <- victimas %>%
+  mutate(Mes = stringr::str_to_title(Mes))
+
+# Unir lesionados y fallecidos del SOA
+soa_unido <- heridos_soa %>%
+  full_join(fallecidos_soa, by = c("Año", "Mes"))
+
+# Unir la base del COSEVI con la del SOA
+victimas_completo <- victimas %>%
+  left_join(soa_unido, by = c("Año", "Mes"))
+
+# Verificar resultado
+glimpse(victimas_completo)
+
+```
+
+ 

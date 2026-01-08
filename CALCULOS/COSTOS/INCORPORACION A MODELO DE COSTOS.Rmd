@@ -1,0 +1,1320 @@
+---
+title: "Untitled"
+author: "Fernanda"
+date: "2025-11-03"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+#Bases
+```{r}
+library(readxl)
+tarifario <- read_excel("Desktop/PRACTICA /CIOdD/DATOS/BASES CREADAS/Costos Hospitalarios.xlsx")
+```
+
+```{r}
+library(readr)
+personas_2024 <- read_delim("Desktop/PRACTICA /CIOdD/DATOS/COSEVI/personas 2024.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+str(personas_2024)
+victimas=personas_2024 
+victimas$`Vehiculo en  el que viajaba`
+```
+
+*Victimas y roles*
+```{r}
+library(dplyr)
+library(stringr)
+
+# 1. Copia para no alterar el original
+p24 <- victimas %>%
+  mutate(
+    Rol = str_trim(str_to_lower(Rol)),
+    `Tipo de lesión` = str_trim(str_to_lower(`Tipo de lesión`)),
+    `Vehiculo en  el que viajaba` = str_trim(str_to_lower(`Vehiculo en  el que viajaba`))
+  )
+
+resumen_simple <- p24 %>%
+  count(Rol, `Tipo de lesión`, `Vehiculo en  el que viajaba`, name = "Total")
+
+# Cantidad total por Rol
+conteo_por_rol <- resumen_simple %>%
+  group_by(Rol) %>%
+  summarise(Total = sum(Total, na.rm = TRUE)) %>%
+  arrange(desc(Total))
+
+conteo_por_rol
+
+# Cantidad total por Vehiculo 
+conteo_por_vehiculo <- resumen_simple %>%
+  group_by(`Vehiculo en  el que viajaba`) %>%
+  summarise(Total = sum(Total, na.rm = TRUE)) %>%
+  arrange(desc(Total))
+conteo_por_vehiculo
+```
+
+
+```{r}
+library(readxl)
+COSTOS_AMBULANCIAS <- read_excel("Desktop/PRACTICA /CIOdD/DATOS/BASES CREADAS/COSTOS AMBULANCIAS.xlsx")
+names(COSTOS_AMBULANCIAS)
+```
+
+```{r}
+library(readxl)
+PRECIOS_DE_REPARACION <- read_excel("Desktop/PRACTICA /CIOdD/DATOS/BASES CREADAS/PRECIOS DE REPARACION.xlsx")
+str(PRECIOS_DE_REPARACION)
+```
+
+```{r}
+fallecidos_oij <-  read_excel("~/Desktop/PRACTICA /CIOdD/DATOS/PODER JUDICIAL/Muertes PJ por edad.xlsx")
+```
+
+#Fallecidos en traslado y hospital
+```{r}
+library(dplyr)
+#Fallecidos en sitio  488 y en hospital 397 para 2017
+fallecidos_oij_anio <- fallecidos_oij %>%
+  group_by(Año) %>%
+  summarise(Fallecidos_OIJ = sum(Fallecidos, na.rm = TRUE))
+fallecidos_victimas_anio <- victimas %>%
+  filter(`Tipo de lesión`== "Muerte") %>%
+  group_by(Año) %>%
+  summarise(Fallecidos_sitio = n())
+comparacion <- fallecidos_oij_anio %>%
+  left_join(fallecidos_victimas_anio, by = "Año")
+comparacion <- comparacion %>%
+  mutate(Fallecidos_Hospital = Fallecidos_OIJ - Fallecidos_sitio)
+comparacion
+sum(comparacion$Fallecidos_sitio, na.rm = TRUE) #3138
+sum(comparacion$Fallecidos_Hospital, na.rm = TRUE)#2506
+#Los fallecidos van del 2017 al 2024 
+```
+#Lista insumos
+```{r}
+# Crear lista de insumos por tipo de lesión
+insumos_lesion <- list(
+  ileso = c( # Agrega aquí los insumos que correspondan solo a "ileso"
+    "Área Funcional de  Emergencias Triage",
+    "Área Funcional de  Emergencias Consultorios",
+    "Traslado Ambulancia"
+  ),
+  
+  "herido leve" = c( # Agrega aquí todos los insumos solo de "herido leve"
+    "Área Funcional de Emergencias Consultorios", "Área Funcional de Emergencias Inhalo terapia", "Área Funcional de Emergencias Observación", "Traslado Ambulancia", "Área Funcional de Emergencias Observación Tiempo de Espera",
+    "Consulta Especializada Primera Vez","Curaciones hasta 15 minutos", "Curaciones hasta 30 minutos", "Consulta no Médica", 
+"Consulta Especializada Primera Vez", 
+"Costo promedio de Interconsulta", "Costo Consulta Medicina General Primera vez", "Intravenosas", "Intramusculares", 
+"Via Intradérmicas-subcutánea","Cirugia menor Pequeña", "Cuerpo extraño intraocular", "Injertos","Antebrazo y Mano", "Bota Alta", "Bota Corta", "Brazo y Antebrazo", 
+"Cincho Pélvico", "Corset", "Cuello de Tomas de yeso", "Férula de Madera o Metal para Dedos", 
+"Férula en Aducción Miembro Superior", "Férula en Esgrima y Aducción", "Férula en U", 
+"Férula Inferior", "Férula Superior", "Guantina", "Milton Alto", "Milton Colgante", 
+"Milton Corto", "Toracobraquial", "Tubo de Yeso", "Yesotomía", "Argollas", "De Antebrazo y Mano", "De Bola", "De Carpo y Mano", 
+"De miembro Inferior Elástico", "De Tobillo o Rodilla Elástico", "Puño Cuello", 
+"Toráxico Elástico", "Vellpeau Elástico", "Vellpeau (Vendaje)","Rayos X de AP y lateral de columna cervical",
+"Rayos X de oblicuas derecha e izquierda de columna cervical",
+"Rayos X de flexión-extensión de columna cervical",
+"Rayos X de trans-oral de columna cervical",
+"Rayos X de AP y lateral de columna dorsal",
+"Rayos X de AP y lateral de columna lumbosacra",
+"Rayos X de oblicuas derecha e izquierda de columna lumbosacra",
+"Rayos X de flexión-extensión de columna lumbosacra",
+"Rayos X de columna dorso-lumbar de columna lumbosacra",
+"Rayos X de AP y lateral de columna sacro-coccígea",
+"Rayos X de tórax, pelvis y abdomen (cada una)",
+"Rayos X de AP y lateral",
+"Rayos X de senos paranasales (SPN)",
+"Rayos X de mandíbula (maxilar inferior)",
+"Rayos X de articulación témporo-mandibular",
+"Rayos X de agujeros ópticos",
+"Rayos X de perfilograma",
+"Rayos X de proyección de Waters",
+"Rayos X de proyección de Towne",
+"Rayos X de senos paranasales (incluye: Waters, Hirtz-lat, proyección de Caldwell)",
+"Rayos X de arco cigomático",
+"Maxilar Superior e Inferior",
+"Doppler abdominal",
+"Doppler arterial",
+"Doppler carótidas",
+"Doppler renal"
+
+  ),
+  
+  "herido grave" = c(# Agrega aquí los insumos solo de "herido grave"
+    "Área Funcional de Emergencias Triage", "Área Funcional de Emergencias Reanimación", "Área Funcional de Emergencias Suturas y Cirugía Menor", "Traslado Ambulancia",
+"Cirugia menor Pequeña", "Cirugia menor Mediana", "Cirugia menor Grande", "Cirugia menor Otras", 
+"Unidad de Cuidados Intensivos", "Injertos", "Zetaplastia", 
+"Desprendimiento de retina", "Luxación de cadera", "Coartación de aorta", 
+"Comunicación interauricular", "Comunicación interventricular", "Ligadura de ductus arterioso", 
+"Transposición de grandes vasos", "Uso de quirófano y personal (una hora)", 
+"Uso de quirófano y personal (por minuto)", 
+"Uso solo de instalaciones y equipo básico de quirófano (una hora)", 
+"Cuerpo extraño intraocular", "Colocación pin placa de Richards", "Laminectomía lumbar", 
+"Revisión reemplazo de caderas", "Sutura tendón mano", "Bota Alta", "Bota Corta", "Brazo y Antebrazo", 
+"Cincho Pélvico", "Corset", "Cuello de Tomas de yeso", "Férula de Madera o Metal para Dedos", 
+"Férula en Aducción Miembro Superior", "Férula en Esgrima y Aducción", "Férula en U", 
+"Férula Inferior", "Férula Superior", "Guantina", "Milton Alto", "Milton Colgante", 
+"Milton Corto", "Toracobraquial", "Tubo de Yeso", "Yesotomía","De Rodilla Semiduro", "De Tobillo Semiduro", "Toráxico Semiduro", "Watson Jones",
+"Tomografía convencional columna",
+"Tomografía convencional cráneo",
+"Tomografía convencional tórax, abdomen, pelvis",
+"Tomografía helicoidal columna",
+"Tomografía helicoidal cráneo",
+"Tomografía helicoidal tórax, abdomen, pelvis","Rayos X de AP y lateral de columna cervical",
+"Rayos X de oblicuas derecha e izquierda de columna cervical",
+"Rayos X de flexión-extensión de columna cervical",
+"Rayos X de trans-oral de columna cervical",
+"Rayos X de AP y lateral de columna dorsal",
+"Rayos X de AP y lateral de columna lumbosacra",
+"Rayos X de oblicuas derecha e izquierda de columna lumbosacra",
+"Rayos X de flexión-extensión de columna lumbosacra",
+"Rayos X de columna dorso-lumbar de columna lumbosacra",
+"Rayos X de AP y lateral de columna sacro-coccígea",
+"Rayos X de tórax, pelvis y abdomen (cada una)",
+"Rayos X de AP y lateral",
+"Rayos X de senos paranasales (SPN)",
+"Rayos X de mandíbula (maxilar inferior)",
+"Rayos X de articulación témporo-mandibular",
+"Rayos X de agujeros ópticos",
+"Rayos X de perfilograma",
+"Rayos X de proyección de Waters",
+"Rayos X de proyección de Towne",
+"Rayos X de senos paranasales (incluye: Waters, Hirtz-lat, proyección de Caldwell)",
+"Rayos X de arco cigomático",
+"Maxilar Superior e Inferior",
+"Doppler abdominal",
+"Doppler arterial",
+"Doppler carótidas",
+"Doppler renal"
+
+  ),
+  
+  muerte = c( # Agrega aquí todos los insumos solo de "muerte"
+    "Autopsia",
+    "Embalsamiento",
+    "Uso de instalaciones y equipo de morgue (Convenio C.C.S.S.-O.I.J)",  "Área Funcional de Emergencias Triage", "Área Funcional de Emergencias Reanimación", "Área Funcional de Emergencias Suturas y Cirugía Menor", "Traslado Ambulancia",
+"Cirugia menor Pequeña", "Cirugia menor Mediana", "Cirugia menor Grande", "Cirugia menor Otras", 
+"Unidad de Cuidados Intensivos", "Injertos", "Zetaplastia", 
+"Desprendimiento de retina", "Luxación de cadera", "Coartación de aorta", 
+"Comunicación interauricular", "Comunicación interventricular", "Ligadura de ductus arterioso", 
+"Transposición de grandes vasos", "Uso de quirófano y personal (una hora)", 
+"Uso de quirófano y personal (por minuto)", 
+"Uso solo de instalaciones y equipo básico de quirófano (una hora)", 
+"Cuerpo extraño intraocular", "Colocación pin placa de Richards", "Laminectomía lumbar", 
+"Revisión reemplazo de caderas", "Sutura tendón mano", "Bota Alta", "Bota Corta", "Brazo y Antebrazo", 
+"Cincho Pélvico", "Corset", "Cuello de Tomas de yeso", "Férula de Madera o Metal para Dedos", 
+"Férula en Aducción Miembro Superior", "Férula en Esgrima y Aducción", "Férula en U", 
+"Férula Inferior", "Férula Superior", "Guantina", "Milton Alto", "Milton Colgante", 
+"Milton Corto", "Toracobraquial", "Tubo de Yeso", "Yesotomía","De Rodilla Semiduro", "De Tobillo Semiduro", "Toráxico Semiduro", "Watson Jones",
+"Tomografía convencional columna",
+"Tomografía convencional cráneo",
+"Tomografía convencional tórax, abdomen, pelvis",
+"Tomografía helicoidal columna",
+"Tomografía helicoidal cráneo",
+"Tomografía helicoidal tórax, abdomen, pelvis","Rayos X de AP y lateral de columna cervical",
+"Rayos X de oblicuas derecha e izquierda de columna cervical",
+"Rayos X de flexión-extensión de columna cervical",
+"Rayos X de trans-oral de columna cervical",
+"Rayos X de AP y lateral de columna dorsal",
+"Rayos X de AP y lateral de columna lumbosacra",
+"Rayos X de oblicuas derecha e izquierda de columna lumbosacra",
+"Rayos X de flexión-extensión de columna lumbosacra",
+"Rayos X de columna dorso-lumbar de columna lumbosacra",
+"Rayos X de AP y lateral de columna sacro-coccígea",
+"Rayos X de tórax, pelvis y abdomen (cada una)",
+"Rayos X de AP y lateral",
+"Rayos X de senos paranasales (SPN)",
+"Rayos X de mandíbula (maxilar inferior)",
+"Rayos X de articulación témporo-mandibular",
+"Rayos X de agujeros ópticos",
+"Rayos X de perfilograma",
+"Rayos X de proyección de Waters",
+"Rayos X de proyección de Towne",
+"Rayos X de senos paranasales (incluye: Waters, Hirtz-lat, proyección de Caldwell)",
+"Rayos X de arco cigomático",
+"Maxilar Superior e Inferior",
+"Doppler abdominal",
+"Doppler arterial",
+"Doppler carótidas",
+"Doppler renal", "Uso de instalaciones y equipo de morgue (Convenio C.C.S.S.-O.I.J)"
+   
+  )
+)
+```
+
+
+```{r}
+library(dplyr)
+library(tibble)
+library(stringr)
+library(scales)
+library(tidyr)
+
+# ---- 0. Porcentajes base ----
+pesos_base <- c(50, 25, 15, 7, 3) # en el orden de mayor a menor probabilidad
+
+# ---- 1. Definir el orden de probabilidad por tipo de lesión (manual) ----
+orden_por_lesion <- list(
+  muerte = c("Ambulancia Tipo A", "Ambulancia Tipo B", "Vehículo de Rescate", "Ambulancia Tipo C", "Ambulancia Aérea"),
+  `herido grave` = c("Ambulancia Tipo B", "Ambulancia Tipo A", "Ambulancia Tipo C", "Vehículo de Rescate", "Ambulancia Aérea"),
+  `herido leve` = c("Ambulancia Tipo C", "Ambulancia Tipo B", "Ambulancia Tipo A", "Vehículo de Rescate", "Ambulancia Aérea"),
+  ileso = c("Ambulancia Tipo C", "Ambulancia Tipo B", "Ambulancia Tipo A", "Vehículo de Rescate", "Ambulancia Aérea")
+)
+
+# ---- 2. Crear tabla con todas las combinaciones lesión x ambulancia y asignar porcentajes segun el orden ----
+# Obtener todas las ambulancias únicas (asegura que coincidan con COSTOS_AMBULANCIAS)
+ambulancias_unicas <- unique(COSTOS_AMBULANCIAS$`Tipo de Ambulancia`)
+
+# Generar rows
+tipo_amb_map_custom <- bind_rows(
+  lapply(names(orden_por_lesion), function(lesion) {
+    orden <- orden_por_lesion[[lesion]]
+    # asegurar que orden tenga las 5 ambulancias; si falta alguna, la añadimos al final
+    faltantes <- setdiff(ambulancias_unicas, orden)
+    orden_completo <- c(orden, faltantes)
+    tibble(
+      Tipo_lesion = lesion,
+      `Tipo de Ambulancia` = orden_completo,
+      Porcentaje = pesos_base[seq_len(length(orden_completo))]
+    )
+  })
+)
+
+# ---- 3. Costo de insumos por tipo de lesión (desde insumos_lesion y tarifario) ----
+costo_insumos_lesion <- lapply(names(insumos_lesion), function(lesion) {
+  insumos <- insumos_lesion[[lesion]]
+  costo_total <- tarifario %>%
+    filter(`Descripción del insumo` %in% insumos) %>%
+    summarise(Costo_insumos = sum(`Costo unitario`, na.rm = TRUE)) %>%
+    pull(Costo_insumos)
+  tibble(Tipo_lesion = tolower(lesion), Costo_insumos = replace_na(costo_total, 0))
+}) %>% bind_rows() %>% mutate(Tipo_lesion = tolower(Tipo_lesion))
+
+# ---- 4. Unir con COSTOS_AMBULANCIAS para traer el costo de ambulancia ----
+costo_lesion_detalle <- tipo_amb_map_custom %>%
+  left_join(
+    COSTOS_AMBULANCIAS %>% select(`Tipo de Ambulancia`, `Costo Aproximado (CRC)`),
+    by = "Tipo de Ambulancia"
+  ) %>%
+  # normalizar nombres de lesion a minusculas (para unir)
+  mutate(Tipo_lesion = tolower(Tipo_lesion)) %>%
+  left_join(costo_insumos_lesion, by = "Tipo_lesion") %>%
+  mutate(
+    `Costo Aproximado (CRC)` = as.numeric(gsub(",", "", as.character(`Costo Aproximado (CRC)`))),
+    Costo_insumos = replace_na(Costo_insumos, 0),
+    Costo_total = `Costo Aproximado (CRC)` + Costo_insumos,
+    Porcentaje = as.numeric(Porcentaje),
+    Peso = Porcentaje / 100
+  )
+
+# ---- 5. Verificación rápida (opcional) ----
+# print(costo_lesion_detalle %>% filter(Tipo_lesion == "ileso"))
+
+# ---- 6. Seleccionar la ambulancia más probable por Tipo_lesion según tu orden manual ----
+# (debiera corresponder a la ambulancia que tiene Porcentaje == 50 en cada lesion)
+costo_lesion_principal <- costo_lesion_detalle %>%
+  group_by(Tipo_lesion) %>%
+  # como ya asignamos Porcentaje manualmente, slice_max por Porcentaje selecciona la que definiste como mas probable
+  slice_max(order_by = Porcentaje, n = 1, with_ties = FALSE) %>%
+  ungroup() %>%
+  transmute(
+    Tipo_lesion,
+    Costo_estimado = as.numeric(Costo_total)
+  )
+
+# ---- 7. Resultado final (nombre esperado: costo_lesion) ----
+costo_lesion <- costo_lesion_principal
+
+cat("== Resultado final: costo_lesion ==\n")
+print(costo_lesion)
+
+```
+
+
+#Modelo base
+*Actualización de valores*
+Se esta trayendo valores económicos del año 2017 al poder adquisitivo del año 2024 y 2025, para que el monto represente cuánto “vale” ese mismo costo.
+Esto se hace porque el dinero pierde valor en el tiempo (inflación).
+¿Por qué se usa el IPC?
+El IPC (Índice de Precios al Consumidor) mide cuánto han subido los precios en el país entre dos años.
+Es un indicador estándar para mantener la comparabilidad monetaria en el tiempo.
+Usarlo garantiza que:
+No estamos inventando el aumento.
+No estamos sobreestimando ni subestimando el valor.
+Estamos usando una fuente oficial (INEC).
+¿Por qué multiplicación y no suma?
+Porque la inflación es un proceso acumulativo, no un aumento fijo.
+Ejemplo: si la inflación sube 3% cada año, no se suman los 3% de forma lineal, sino que cada año aumenta sobre el nuevo valor.
+Interpretación disciplinaria
+Cuando aplicamos esto en costos sociales, riesgo vial o análisis de externalidades, el objetivo es:
+Valorar la pérdida social en términos reales (actuales).
+Permitir comparaciones válidas entre estudios o años.
+Usar esos valores en modelos de costo-beneficio o impacto.
+*Actualización valor de vida para 2024*
+```{r}
+library(dplyr)
+library(stringr)
+library(scales)
+library(tibble)
+library(tidyr)
+
+# ------------------------------------------------------------
+# 1. Actualización de valores de vida (2017 → 2024)
+# ------------------------------------------------------------
+valores_2017 <- c(4845203, 2422601, 2422601, 2422601)
+factor_inflacion <- 1.128  # +12.8% acumulado hasta 2024 según IPC INEC
+
+valores_2024 <- round(valores_2017 * factor_inflacion, 0)
+
+tabla_valor_vida2024 <- tibble(
+  Caso = 1:4,
+  Año_2017 = valores_2017,
+  Año_2024 = valores_2024
+)
+
+# Asignar valores actualizados según tipo de lesión:
+valor_por_caso2024 <- c(
+  "1" = valores_2024[1],  # muerte
+  "2" = valores_2024[2],  # discapacidad permanente
+  "3" = valores_2024[3],  # discapacidad funcional
+  "4" = valores_2024[4],   # ileso → sin valor de vida
+  "5" = valores_2024[1] # muerte en sitio
+)
+
+tabla_valor_vida2024
+valor_por_caso2024 
+
+```
+
+*Actualización valor de vida para 2025*
+
+```{r}
+library(dplyr)
+library(stringr)
+library(scales)
+library(tibble)
+library(tidyr)
+
+# ------------------------------------------------------------
+# 1. Actualización de valores de vida (2017 → 2025)
+# ------------------------------------------------------------
+valores_2017 <- c(4845203, 2422601, 2422601, 2422601)
+factor_inflacion <- 1.151  # +15.1% acumulado hasta 2025
+
+valores_2025 <- round(valores_2017 * factor_inflacion, 0)
+
+tabla_valor_vida <- tibble(
+  Caso = 1:4,
+  Año_2017 = valores_2017,
+  Año_2025 = valores_2025
+)
+
+# Asignar valores actualizados según tipo de lesión:
+valor_por_caso <- c(
+  "1" = valores_2025[1],  # muerte
+  "2" = valores_2025[2],  # discapacidad permanente
+  "3" = valores_2025[3],  # discapacidad funcional
+  "4" = valores_2025[4],   # ileso → sin valor de vida
+  "5" = valores_2025[1]  # muerte en sitio 
+)
+
+```
+
+*Caso 1: Muerte en sitio*
+
+Descripción:
+Corresponde a las víctimas que fallecen en el lugar del accidente, por lo que no se requiere atención médica de emergencia ni traslado hospitalario. En su lugar, intervienen las autoridades judiciales (OIJ), y se generan gastos por el levantamiento del cuerpo, autopsia y embalsamamiento.
+
+
+
+```{r}
+m1=tarifario[tarifario$`Descripción del insumo` == "Embalsamiento", ]
+#364027
+m2=tarifario[tarifario$`Descripción del insumo` == "Autopsia", ]
+# 339043 
+m3=tarifario[tarifario$`Descripción del insumo` == "Uso de instalaciones y equipo de morgue (Convenio C.C.S.S.-O.I.J)", ]
+#174012
+```
+Para 2024
+```{r}
+# Crear variables con los valores extraídos del tarifario
+m1 <- 364027   # Embalsamamiento
+m2 <- 339043   # Autopsia
+m3 <- 174012   # Uso de morgue (OIJ)
+costo_operativo <- m1 + m2 + m3
+valor_vida_2024 <-5465389 
+muerte_en_sitio <- data.frame(
+  Tipo_lesion = "muerte en sitio",
+  Tipo_de_Ambulancia = 250000,
+  Costo_Aproximado_CRC = costo_operativo,
+  Costo_insumos = valor_vida_2025,
+  Costo_total = costo_operativo + valor_vida_2024,
+  Porcentaje = 2  # Probabilidad estimada (ajustable según tu modelo)
+)
+
+
+# Mostrar el nuevo caso
+c5.2024=muerte_en_sitio$Costo_total;c5.2024
+#513 muertes en sitio para 2024
+```
+
+
+
+Para 2025
+```{r}
+#Proyeccion para muertes en sitio y hospital/traslado 
+library(dplyr)
+
+fallecidos <- tibble(
+  Año = 2017:2024,
+  Fallecidos_total = c(885, 829, 792, 581, 730, 854, 932, 926),
+  Sitio = c(488, 471, 451, 311, 373, 491, 528, 513),
+  Hospital = c(397, 358, 341, 270, 357, 363, 404, 413)
+)
+
+# Proporciones 2024
+prop_sitio_2024 <- 513 / 926
+prop_hospital_2024 <- 413 / 926
+
+# Proyección 2025 total (ya obtenida previamente)
+proy_2025_total <- 1002
+
+# Descomposición proyectada
+proy_2025_sitio <- round(proy_2025_total * prop_sitio_2024)
+proy_2025_hospital <- round(proy_2025_total * prop_hospital_2024)
+
+proy_2025 <- tibble(
+  Año = 2025,
+  Fallecidos_total = proy_2025_total,
+  Fallecidos_sitio = proy_2025_sitio,
+  Fallecidos_hospital_traslado = proy_2025_hospital
+)
+
+proy_2025
+
+```
+
+```{r}
+# Crear variables con los valores extraídos del tarifario
+m1 <- 364027   # Embalsamamiento
+m2 <- 339043   # Autopsia
+m3 <- 174012   # Uso de morgue (OIJ)
+costo_operativo <- m1 + m2 + m3
+valor_vida_2025 <- 5643000 
+muerte_en_sitio <- data.frame(
+  Tipo_lesion = "muerte en sitio",
+  Tipo_de_Ambulancia = 250000,
+  Costo_Aproximado_CRC = costo_operativo,
+  Costo_insumos = valor_vida_2025,
+  Costo_total = costo_operativo + valor_vida_2025,
+  Porcentaje = 2  # Probabilidad estimada (ajustable según tu modelo)
+)
+
+
+# Mostrar el nuevo caso
+c5=muerte_en_sitio$Costo_total;c5
+#Son 3138 muertos en sitio (EN TOTAL)
+#Para 2025 se aproximan  555
+```
+
+#Ver este modelo
+*Otros casos (2,3,4,5) y todos juntos  para 2024*
+```{r}
+library(dplyr)
+library(stringr)
+library(tidyr)
+
+#-------------------------------------------------------
+# 0) DEFINIR VALORES PARA 2024
+#-------------------------------------------------------
+valor_por_caso2024 <- c(
+  "1" = 5465389,
+  "2" = 2732694,
+  "3" = 2732694,
+  "4" = 0,
+  "5" = 5465389
+)
+
+m1 <- 364027
+m2 <- 339043
+m3 <- 174012
+costo_operativo <- m1 + m2 + m3
+valor_vida_2024 <- 5465389
+
+muerte_en_sitio_2024 <- data.frame(
+  Tipo_lesion = "muerte en sitio",
+  Tipo_de_Ambulancia = 250000,
+  Costo_Aproximado_CRC = costo_operativo,
+  Costo_insumos = valor_vida_2024,
+  Costo_total = costo_operativo + valor_vida_2024
+)
+
+c5_2024 <- muerte_en_sitio_2024$Costo_total
+
+#-------------------------------------------------------
+# 1) EXCLUIR MUERTE EN SITIO
+#-------------------------------------------------------
+victimas2 <- victimas %>%
+  mutate(Tipo_lesion = str_trim(tolower(`Tipo de lesión`))) %>%
+  filter(Tipo_lesion != "muerte")
+
+#-------------------------------------------------------
+# 2) COSTOS MÉDICOS PROMEDIO
+#-------------------------------------------------------
+costo_lesion2 <- costo_lesion %>%
+  mutate(Costo_estimado = as.numeric(Costo_estimado)) %>%
+  group_by(Tipo_lesion) %>%
+  summarise(Costo_medico_prom = mean(Costo_estimado, na.rm = TRUE), .groups = "drop")
+
+#-------------------------------------------------------
+# 3) CLASIFICACIÓN DE CASOS (2,3,4)
+#-------------------------------------------------------
+victimas3 <- victimas2 %>%
+  mutate(
+    Caso = case_when(
+      Tipo_lesion == "herido grave" ~ 2L,
+      Tipo_lesion == "herido leve"  ~ 3L,
+      Tipo_lesion == "ileso"        ~ 4L,
+      TRUE                          ~ 4L
+    )
+  )
+
+#-------------------------------------------------------
+# 4) CALCULAR COSTO POR VÍCTIMA
+#-------------------------------------------------------
+victimas4 <- victimas3 %>%
+  left_join(costo_lesion2, by = "Tipo_lesion") %>%
+  mutate(
+    Costo_medico_prom = replace_na(Costo_medico_prom, 0),
+    Valor_vida = as.numeric(valor_por_caso2024[as.character(Caso)]),
+    Costo_total_final = Costo_medico_prom + Valor_vida,
+    n_victima = 1
+  )
+
+#-------------------------------------------------------
+# 5) RESUMEN BASE (CASOS 2,3,4)
+#-------------------------------------------------------
+resumen_por_caso2024 <- victimas4 %>%
+  group_by(Caso) %>%
+  summarise(
+    Costo_prom_victima2024 = mean(Costo_total_final, na.rm = TRUE),
+    Total_victimas2024 = sum(n_victima),
+    Costo_total2024 = sum(Costo_total_final),
+    .groups = "drop"
+  )
+
+#-------------------------------------------------------
+# 6) CASO 1 (MUERTE EN HOSPITAL / TRASLADO)
+#-------------------------------------------------------
+fallecidos_hospital <- sum(comparacion$Fallecidos_Hospital, na.rm = TRUE)
+
+costo_prom_caso1_2024 <- costo_lesion2 %>%
+  filter(Tipo_lesion == "muerte") %>%
+  pull(Costo_medico_prom) + valor_por_caso2024["1"]
+
+resumen_por_caso2024 <- bind_rows(
+  tibble(
+    Caso = 1,
+    Costo_prom_victima2024 = costo_prom_caso1_2024,
+    Total_victimas2024 = fallecidos_hospital,
+    Costo_total2024 = costo_prom_caso1_2024 * fallecidos_hospital
+  ),
+  resumen_por_caso2024
+)
+
+#-------------------------------------------------------
+# 7) CASO 5 (MUERTE EN SITIO)
+#-------------------------------------------------------
+fallecidos_sitio <- sum(comparacion$Fallecidos_sitio, na.rm = TRUE)
+
+resumen_por_caso2024 <- bind_rows(
+  resumen_por_caso2024,
+  tibble(
+    Caso = 5,
+    Costo_prom_victima2024 = c5_2024,
+    Total_victimas2024 = fallecidos_sitio,
+    Costo_total2024 = c5_2024 * fallecidos_sitio
+  )
+)
+
+#-------------------------------------------------------
+# 8) AGREGAR DESCRIPCIÓN FINAL
+#-------------------------------------------------------
+resumen_por_caso2024 <- resumen_por_caso2024 %>%
+  arrange(Caso) %>%
+  mutate(
+    Descripcion = case_when(
+      Caso == 1 ~ "Fallecidos en hospital / traslado",
+      Caso == 2 ~ "Herido grave — discapacidad permanente",
+      Caso == 3 ~ "Herido leve — discapacidad temporal",
+      Caso == 4 ~ "Ileso — sin discapacidad",
+      Caso == 5 ~ "Fallecidos en sitio"
+    )
+  ) %>%
+  select(Caso, Descripcion, Costo_prom_victima2024, Total_victimas2024, Costo_total2024)
+
+print(resumen_por_caso2024)
+
+```
+
+
+*Otros casos (2,3,4,5) y todos juntos  para 2025*
+```{r}
+library(dplyr)
+library(stringr)
+
+# 1) Usar victimas pero EXCLUYENDO muerte en sitio
+victimas2 <- victimas %>%
+  mutate(Tipo_lesion = str_trim(tolower(`Tipo de lesión`))) %>%
+  filter(Tipo_lesion != "muerte")   # ← IMPORTANTE
+
+# 2) Calcular costos médicos promedio por tipo de lesión
+costo_lesion2 <- costo_lesion %>%
+  mutate(Costo_estimado = as.numeric(Costo_estimado)) %>%
+  group_by(Tipo_lesion) %>%
+  summarise(Costo_medico_prom = mean(Costo_estimado, na.rm = TRUE), .groups = "drop")
+
+# 3) Clasificar casos SOLO para heridos/ilesos
+victimas3 <- victimas2 %>%
+  mutate(
+    Caso = case_when(
+      Tipo_lesion == "herido grave" ~ 2L,
+      Tipo_lesion == "herido leve"  ~ 3L,
+      Tipo_lesion == "ileso"        ~ 4L,
+      TRUE                          ~ 4L
+    )
+  )
+
+# 4) Unir costos médicos y sumar costo total por víctima
+victimas4 <- victimas3 %>%
+  left_join(costo_lesion2, by = "Tipo_lesion") %>%
+  mutate(
+    Costo_medico_prom = replace_na(Costo_medico_prom, 0),
+    Valor_vida = as.numeric(valor_por_caso[as.character(Caso)]),
+    Costo_total_final = Costo_medico_prom + Valor_vida,
+    n_victima = 1
+  )
+
+# 5) Resumen para casos 2,3,4
+resumen_por_caso <- victimas4 %>%
+  group_by(Caso) %>%
+  summarise(
+    Costo_prom_victima = mean(Costo_total_final, na.rm = TRUE),
+    Total_victimas = sum(n_victima),
+    Costo_total = sum(Costo_total_final),
+    .groups = "drop"
+  )
+
+# 6) Agregar Caso 1 (hospital/traslado) manualmente
+fallecidos_hospital <- sum(comparacion$Fallecidos_Hospital, na.rm = TRUE)
+
+costo_prom_caso1 <- costo_lesion2 %>%
+  filter(Tipo_lesion == "muerte") %>%
+  pull(Costo_medico_prom) + valor_por_caso["1"]
+
+resumen_por_caso <- bind_rows(
+  tibble(
+    Caso = 1,
+    Costo_prom_victima = costo_prom_caso1,
+    Total_victimas = fallecidos_hospital,
+    Costo_total = costo_prom_caso1 * fallecidos_hospital
+  ),
+  resumen_por_caso
+)
+
+# 7) Agregar Caso 5 (muerte en sitio)
+fallecidos_sitio <- sum(comparacion$Fallecidos_sitio, na.rm = TRUE)
+
+resumen_por_caso <- bind_rows(
+  resumen_por_caso,
+  tibble(
+    Caso = 5,
+    Costo_prom_victima = muerte_en_sitio$Costo_total,
+    Total_victimas = fallecidos_sitio,
+    Costo_total = muerte_en_sitio$Costo_total * fallecidos_sitio
+  )
+)
+
+# Ordenar
+resumen_por_caso <- resumen_por_caso %>% arrange(Caso)
+
+print(resumen_por_caso)
+
+```
+
+```{r}
+# Agregar descripción del caso
+resumen_por_caso <- resumen_por_caso %>%
+  mutate(
+    Descripcion = case_when(
+      Caso == 1 ~ "Fallecidos en hospital / traslado",
+      Caso == 2 ~ "Herido grave — discapacidad permanente",
+      Caso == 3 ~ "Herido leve — discapacidad temporal",
+      Caso == 4 ~ "Ileso — sin discapacidad",
+      Caso == 5 ~ "Fallecidos en sitio"
+    )
+  ) %>%
+  select(Caso, Descripcion, Costo_prom_victima, Total_victimas, Costo_total)
+
+print(resumen_por_caso)
+
+```
+
+#Costos reparación vehiculos
+
+```{r}
+library(dplyr)
+
+# Calcular promedios y crear una fila nueva
+PROMEDIO_SUV_SEDAN <- PRECIOS_DE_REPARACION %>%
+  filter(`Tipo de vehículo` %in% c("Sedan", "SUV")) %>%
+  summarise(
+    `Tipo de vehículo` = "Particular",
+    `Valor comercial promedio 2024` = mean(`Valor comercial promedio 2024`, na.rm = TRUE),
+    Leve = mean(Leve, na.rm = TRUE),
+    Moderado = mean(Moderado, na.rm = TRUE),
+    `Pérdida total` = mean(`Pérdida total`, na.rm = TRUE),
+    `Equipamiento seguridad` = NA_character_
+  )
+
+# Agregar la fila a la base original
+PRECIOS_DE_REPARACION <- bind_rows(PRECIOS_DE_REPARACION, PROMEDIO_SUV_SEDAN)
+```
+
+#Incorporación al modelo (modelo final)
+*Para 2024*
+```{r}
+library(dplyr)
+library(stringr)
+library(scales)
+
+# === 1. Limpiar y preparar PRECIOS_DE_REPARACION ===
+PRECIOS_DE_REPARACION2024 <- PRECIOS_DE_REPARACION %>%
+  distinct(`Tipo de vehículo`, .keep_all = TRUE) %>% 
+  mutate(
+    across(c(Leve, Moderado, `Pérdida total`), as.numeric),
+    `Equipamiento seguridad` = as.numeric(`Equipamiento seguridad`)
+  )
+
+# === 2. Tabla de correspondencia de caso y tipo de daño ===
+mapa_dano2024 <- tibble(
+  Caso = 1:5,
+  Tipo_dano = c("Pérdida total", "Pérdida total", "Moderado", "Leve", "Pérdida total"),
+  Tipo_lesion = c("muerte", "herido grave", "herido leve", "ileso", "muerte en sitio")
+)
+
+# === 3. Tipos de vehículo relevantes ===
+tipos_vehiculo <- c("Carga liviana", "Motocicleta", "Carga pesada", "Particular")
+
+# === 4. Expandir combinaciones y unir ===
+modelo_costos2024 <- expand.grid(
+  Caso = mapa_dano2024$Caso,
+  `Tipo de vehículo` = tipos_vehiculo,
+  stringsAsFactors = FALSE
+) %>%
+  left_join(mapa_dano2024, by = "Caso") %>%
+  left_join(PRECIOS_DE_REPARACION2024, by = "Tipo de vehículo") %>%
+  rowwise() %>%
+  mutate(
+    Costo_reparacion2024 = dplyr::case_when(
+      Tipo_dano == "Leve" ~ Leve,
+      Tipo_dano == "Moderado" ~ Moderado,
+      Tipo_dano == "Pérdida total" ~ `Pérdida total`,
+      TRUE ~ 0
+    ),
+    Equipamiento_seguridad2024 = ifelse(is.na(`Equipamiento seguridad`), 0, `Equipamiento seguridad`),
+    Costo_total_vehiculo2024 = Costo_reparacion2024 + Equipamiento_seguridad2024
+  ) %>%
+  ungroup() %>%
+  select(Caso, Tipo_lesion, `Tipo de vehículo`, Tipo_dano,
+         Costo_reparacion2024, Equipamiento_seguridad2024, Costo_total_vehiculo2024)
+
+# === 5. Incorporar costos médicos promedio por caso (ya calculados antes) ===
+modelo_costos2024 <- modelo_costos2024 %>% 
+  left_join(
+    resumen_por_caso2024 %>% select(Caso, Costo_prom_victima2024),
+    by = "Caso"
+  )
+
+# === 6. Agregar costo de muerte en sitio ===
+m1 <- 364027
+m2 <- 339043
+m3 <- 174012
+costo_operativo <- m1 + m2 + m3
+valor_vida_2024 <- 5643000  # <- si esto cambia, cámbialo aquí
+c5_2024 <- costo_operativo + valor_vida_2024 
+
+modelo_costos2024 <- modelo_costos2024 %>%
+  mutate(
+    Costo_prom_victima2024 = ifelse(Tipo_lesion == "muerte en sitio", c5_2024, Costo_prom_victima2024)
+  )
+
+# === 7. Costo total combinado por víctima ===
+modelo_costos2024 <- modelo_costos2024 %>%
+  mutate(
+    Costo_total_por_victima2024 =
+      as.numeric(Costo_total_vehiculo2024) + Costo_prom_victima2024
+  )
+
+# === 8. Formateo final ===
+modelo_costos2024 <- modelo_costos2024 %>%
+  mutate(
+    Costo_reparacion2024 = number(Costo_reparacion2024, big.mark = ","),
+    Equipamiento_seguridad2024 = number(Equipamiento_seguridad2024, big.mark = ","),
+    Costo_total_vehiculo2024 = number(Costo_total_vehiculo2024, big.mark = ","),
+    Costo_prom_victima2024 = number(Costo_prom_victima2024, big.mark = ","),
+    Costo_total_por_victima2024 = number(Costo_total_por_victima2024, big.mark = ",")
+  )
+
+# === 9. Resultado final ===
+modelo_costos2024
+
+```
+
+```{r}
+library(dplyr)
+
+modelo_costos_particular2024 <- modelo_costos2024 %>%
+  filter(`Tipo de vehículo` == "Particular") %>%
+  select(
+    Tipo_lesion,
+    `Tipo de vehículo`,
+    Costo_total_por_victima2024
+  )
+
+modelo_costos_particular2024
+
+```
+
+```{r}
+modelo_costos_resumen2024 <- modelo_costos2024 %>%
+  select(
+    Tipo_lesion,
+    `Tipo de vehículo`,
+    Costo_prom_victima2024,
+    Costo_total_por_victima2024
+  )
+
+modelo_costos_resumen2024
+
+```
+
+*Para 2025*
+```{r}
+library(dplyr)
+library(stringr)
+library(scales)
+
+# === 1. Limpiar y preparar PRECIOS_DE_REPARACION ===
+PRECIOS_DE_REPARACION2 <- PRECIOS_DE_REPARACION %>%
+  distinct(`Tipo de vehículo`, .keep_all = TRUE) %>%  # eliminar duplicados
+  mutate(
+    across(c(Leve, Moderado, `Pérdida total`), as.numeric),
+    `Equipamiento seguridad` = as.numeric(`Equipamiento seguridad`)
+  )
+
+# === 2. Crear tabla con correspondencia de caso y tipo de daño ===
+mapa_dano <- tibble(
+  Caso = 1:5,
+  Tipo_dano = c("Pérdida total", "Pérdida total", "Moderado", "Leve", "Pérdida total"),
+  Tipo_lesion = c("muerte", "herido grave", "herido leve", "ileso", "muerte en sitio")
+)
+
+# === 3. Tipos de vehículo relevantes ===
+tipos_vehiculo <- c("Carga liviana", "Motocicleta", "Carga pesada", "Particular")
+
+# === 4. Expandir todas las combinaciones y unir ===
+modelo_costos <- expand.grid(
+  Caso = mapa_dano$Caso,
+  `Tipo de vehículo` = tipos_vehiculo,
+  stringsAsFactors = FALSE
+) %>%
+  left_join(mapa_dano, by = "Caso") %>%
+  left_join(PRECIOS_DE_REPARACION2, by = "Tipo de vehículo") %>%
+  rowwise() %>%
+  mutate(
+    # Seleccionar el costo según el tipo de daño
+    Costo_reparacion = dplyr::case_when(
+      Tipo_dano == "Leve" ~ Leve,
+      Tipo_dano == "Moderado" ~ Moderado,
+      Tipo_dano == "Pérdida total" ~ `Pérdida total`,
+      TRUE ~ 0
+    ),
+    # Si no hay equipamiento, poner 0
+    `Equipamiento seguridad` = ifelse(is.na(`Equipamiento seguridad`), 0, `Equipamiento seguridad`),
+    Costo_total_vehiculo = Costo_reparacion + `Equipamiento seguridad`
+  ) %>%
+  ungroup() %>%
+  select(Caso, Tipo_lesion, `Tipo de vehículo`, Tipo_dano,
+         Costo_reparacion, `Equipamiento seguridad`, Costo_total_vehiculo)
+
+# === 5. Incorporar costos médicos promedio según tipo de lesión ===
+modelo_costos <- modelo_costos %>% 
+  left_join(
+    resumen_por_caso %>% #aca ya tiene valor de vida y costos hospitalarios 
+      select(Caso, Costo_prom_victima),
+    by = "Caso"
+  )
+
+
+# === 6. Agregar caso especial: muerte en sitio ===
+# Valores según tarifario
+m1 <- 364027   # Embalsamamiento
+m2 <- 339043   # Autopsia
+m3 <- 174012   # Morgue (OIJ)
+costo_operativo <- m1 + m2 + m3
+valor_vida_2025 <- 5643000
+c5 <- costo_operativo + valor_vida_2025  # = 6,520,082 
+
+# Asignar el costo del caso 5 en la tabla
+modelo_costos <- modelo_costos %>%
+  mutate(
+    Costo_prom_victima = ifelse(Tipo_lesion == "muerte en sitio", c5, Costo_prom_victima)
+  )
+
+# === 7. Calcular costo total combinado ===
+modelo_costos <- modelo_costos %>%
+  mutate(
+    Costo_total_por_victima = as.numeric(gsub(",", "", Costo_total_vehiculo)) + Costo_prom_victima
+  )
+
+# === 8. Formatear para presentación ===
+modelo_costos <- modelo_costos %>%
+  mutate(
+    Costo_reparacion = number(as.numeric(Costo_reparacion), big.mark = ","),
+    `Equipamiento seguridad` = number(as.numeric(`Equipamiento seguridad`), big.mark = ","),
+    Costo_total_vehiculo = number(as.numeric(Costo_total_vehiculo), big.mark = ","),
+    Costo_prom_victima = number(as.numeric(Costo_prom_victima), big.mark = ","),
+    Costo_total_por_victima = number(as.numeric(Costo_total_por_victima), big.mark = ",")
+  )
+
+# === 9. Resultado final ===
+modelo_costos
+
+```
+
+*Ver solo vehiculos particulares para 2025* 
+```{r}
+library(dplyr)
+
+modelo_costos_particular <- modelo_costos %>%
+  filter(`Tipo de vehículo` == "Particular") %>%
+  select(
+    Tipo_lesion,
+    `Tipo de vehículo`,
+    Costo_total_por_victima = Costo_total_vehiculo
+  )
+modelo_costos_particular
+```
+
+```{r}
+#resumen de las variables mas importantes, para toda lesion y todo tipo de vehiculo 
+modelo_costos_resumen <- modelo_costos %>% 
+  select(Tipo_lesion, `Tipo de vehículo`, Costo_prom_victima, Costo_total_por_victima)
+modelo_costos_resumen 
+```
+
+#Cantidad por caso proyectado a 2025
+*lesiones 2024*
+```{r}
+library(dplyr)
+
+conteo_lesiones2024 <- personas_2024 %>%
+  filter(Año == 2024) %>%                           # ← asegura que sea solo 2024
+  mutate(Tipo_lesion = tolower(`Tipo de lesión`) |> trimws()) %>% 
+  group_by(Tipo_lesion) %>%
+  summarise(Total_2024 = n(), .groups = "drop") %>%
+  arrange(desc(Total_2024))
+
+conteo_lesiones2024
+sum(conteo_lesiones2024$Total_2024)
+```
+
+*Lesiones 2024 con vehiculo sin categorizar*
+```{r}
+library(dplyr)
+
+conteo_lesiones2024 <- personas_2024 %>%
+  filter(Año == 2024) %>%                              # Solo datos 2024
+  mutate(
+    Tipo_lesion = tolower(`Tipo de lesión`) |> trimws(),
+    Vehiculo = tolower(`Vehiculo en  el que viajaba`) |> trimws()
+  ) %>%
+  group_by(Tipo_lesion, Vehiculo) %>%                  # Agrupa por tipo y vehículo
+  summarise(Total_2024 = n(), .groups = "drop_last") %>% 
+  arrange(desc(Total_2024))
+
+conteo_lesiones2024
+
+# Total general de lesiones en 2024 (todas las categorías)
+sum(conteo_lesiones2024$Total_2024)
+
+```
+
+*Lesiones 2024 con vehiculo  categorizado*
+```{r}
+library(dplyr)
+
+conteo_lesiones2024 <- personas_2024 %>%
+  filter(Año == 2024) %>% 
+  mutate(
+    Tipo_lesion = tolower(`Tipo de lesión`) |> trimws(),
+    Vehiculo = tolower(`Vehiculo en  el que viajaba`) |> trimws(),
+    
+    # Categorización del tipo de vehículo
+    Categoria_vehiculo = case_when(
+      Vehiculo %in% c("ambulancia", "camión", "microbús", "autobús", "pick up", "rural") ~ "Carga liviana",
+      Vehiculo %in% c("motocicleta") ~ "Motocicleta",
+      Vehiculo %in% c("bicicleta") ~ "Bicicleta",
+      Vehiculo %in% c("cabezal con remolque", "cabezal sin remolque", "cisterna", "grúa", "vagoneta", "vehículo con remolque") ~ "Carga pesada",
+      Vehiculo %in% c("taxi", "automóvil", "otros") ~ "Particular",
+      TRUE ~ "Sin clasificar"
+    )
+  ) %>%
+  group_by(Tipo_lesion, Categoria_vehiculo) %>% 
+  summarise(Total_2024 = n(), .groups = "drop_last") %>%
+  arrange(desc(Total_2024))
+
+conteo_lesiones2024
+
+# Total general
+sum(conteo_lesiones2024$Total_2024)
+
+```
+
+
+
+```{r}
+str(personas_2024)
+```
+
+```{r}
+library(dplyr)
+library(stringr)
+
+serie_lesiones <- personas_2024 %>%
+  mutate(
+    Tipo_lesion = str_to_lower(`Tipo de lesión`) |> str_trim()
+  ) %>%
+  group_by(Año, Tipo_lesion) %>%
+  summarise(Total = n(), .groups = "drop") %>%
+  arrange(Año, desc(Total))
+
+serie_lesiones
+
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(purrr)
+
+# Aseguramos formato correcto
+serie_lesiones <- serie_lesiones %>%
+  mutate(
+    Tipo_lesion = tolower(Tipo_lesion) |> trimws()
+  )
+
+```
+
+```{r}
+modelos_lesion <- serie_lesiones %>%
+  group_by(Tipo_lesion) %>%
+  nest() %>%
+  mutate(
+    modelo = map(data, ~ lm(Total ~ Año, data = .x)),
+    pred_2025 = map(modelo, ~ predict(.x, newdata = data.frame(Año = 2025)))
+  ) %>%
+  unnest(pred_2025)
+
+modelos_lesion
+
+```
+
+```{r}
+# Paquetes (instala si hace falta)
+if (!requireNamespace("forecast", quietly = TRUE)) install.packages("forecast")
+if (!requireNamespace("dplyr",   quietly = TRUE)) install.packages("dplyr")
+if (!requireNamespace("tibble",  quietly = TRUE)) install.packages("tibble")
+if (!requireNamespace("purrr",   quietly = TRUE)) install.packages("purrr")
+
+library(forecast)
+library(dplyr)
+library(tibble)
+library(purrr)
+
+# --- 0) Tus series (2018-2024) ---
+df_lesiones <- tibble(
+  Año = 2018:2024,
+  herido_leve  = c(16939, 16917, 13079, 15804, 17663, 18913, 19293),
+  ileso        = c(13497, 13068,  9463, 11500, 12818, 13871, 14190),
+  herido_grave = c( 2490,  2237,  1594,  1998,  2393,  2538,  2369)
+) %>%
+  mutate(total = herido_leve + ileso + herido_grave)
+
+# --- Función que ajusta ETS y mezcla con la proyección "reciente" ---
+forecast_mix <- function(x, start_year = 2018, w_ets = 0.6, w_recent = 0.4) {
+  tsx <- ts(x, start = start_year, frequency = 1)
+
+  # 1) Ajuste ETS automático (forecast::ets)
+  fit <- tryCatch( ets(tsx), error = function(e) NULL )
+  pred_ets <- if (!is.null(fit)) as.numeric(forecast(fit, h = 1)$mean) else NA_real_
+
+  # 2) Proyección reciente usando CAGR entre 2022 y 2024 (últimos 3 años -> 2 periodos compuestos)
+  if (length(x) >= 3) {
+    y_t0 <- x[length(x) - 2]   # valor 2022
+    y_t2 <- x[length(x)]       # valor 2024
+    cagr <- if (y_t0 > 0) (y_t2 / y_t0)^(1/2) - 1 else 0
+    pred_recent <- y_t2 * (1 + cagr)
+  } else {
+    pred_recent <- NA_real_
+  }
+
+  # 3) Mezcla (ajustable con w_ets / w_recent)
+  pred_final <- round(w_ets * pred_ets + w_recent * pred_recent)
+
+  tibble(
+    Ultimo_2024 = tail(x, 1),
+    Pron_ETS = round(pred_ets),
+    Pron_Reciente = round(pred_recent),
+    Pron_Final_2025 = as.integer(pred_final)
+  )
+}
+
+# --- Aplicar por serie ---
+res_herido_leve  <- forecast_mix(df_lesiones$herido_leve, 2018)
+res_ileso        <- forecast_mix(df_lesiones$ileso, 2018)
+res_herido_grave <- forecast_mix(df_lesiones$herido_grave, 2018)
+res_total        <- forecast_mix(df_lesiones$total, 2018)
+
+# --- Tabla resumen para 2025 (con nombres claros) ---
+pronosticos_2025_lesiones <- tibble(
+  Tipo = c("herido_leve", "ileso", "herido_grave", "total_todas_lesiones"),
+  Ultimo_2024     = c(res_herido_leve$Ultimo_2024, res_ileso$Ultimo_2024,
+                      res_herido_grave$Ultimo_2024, res_total$Ultimo_2024),
+  Pron_ETS        = c(res_herido_leve$Pron_ETS, res_ileso$Pron_ETS,
+                      res_herido_grave$Pron_ETS, res_total$Pron_ETS),
+  Pron_Reciente   = c(res_herido_leve$Pron_Reciente, res_ileso$Pron_Reciente,
+                      res_herido_grave$Pron_Reciente, res_total$Pron_Reciente),
+  Pron_Final_2025 = c(res_herido_leve$Pron_Final_2025, res_ileso$Pron_Final_2025,
+                      res_herido_grave$Pron_Final_2025, res_total$Pron_Final_2025)
+)
+
+print(pronosticos_2025_lesiones)
+
+# --- Información adicional: mostrar modelo ETS elegido por serie (diagnóstico) ---
+cat("\nModelos ETS ajustados (resumen):\n")
+models_list <- list(
+  herido_leve  = ets(ts(df_lesiones$herido_leve,  start = 2018, freq = 1)),
+  ileso        = ets(ts(df_lesiones$ileso,        start = 2018, freq = 1)),
+  herido_grave = ets(ts(df_lesiones$herido_grave, start = 2018, freq = 1)),
+  total        = ets(ts(df_lesiones$total,        start = 2018, freq = 1))
+)
+purrr::walk2(names(models_list), models_list, ~{
+  cat("\n--", .x, "--\n")
+  print(.y)
+})
+
+# --- (Opcional) guardar resultados en objetos con sufijo 2024 ---
+pronosticos_2025_lesiones_2024 <- pronosticos_2025_lesiones
+models_ets_2024 <- models_list
+pronosticos_2025_lesiones_2024 %>% 
+  select(Tipo, Ultimo_2024, Pron_Final_2025)
+
+
+
+```
+
+```{r}
+library(dplyr)
+library(tibble)
+
+# suponiendo que ya tienes estos objetos en la sesión:
+# pronosticos_2025_lesiones_2024  (la tabla con pron_final para lesiones)
+# proy_2025                       (la tibble con Fallecidos_total para 2025)
+
+# 1) Extraer sólo las columnas que quieres de las lesiones
+lesiones_sel_2025 <- pronosticos_2025_lesiones_2024 %>%
+  select(Tipo, Ultimo_2024, Pron_Final_2025) %>%
+  # opcional: quedarnos sólo con los tres tipos principales si hay más filas
+  filter(Tipo %in% c("herido_leve", "ileso", "herido_grave"))
+
+# 2) Crear fila para fallecidos totales (si ya tienes proy_2025, la usamos;
+#    si no, la construimos con los valores que mostraste)
+fallecidos_row_2025 <- tibble(
+  Tipo = "fallecidos_total",
+  Ultimo_2024 = ifelse(exists("proy_2025") && "Fallecidos_total" %in% names(proy_2025),
+                       # si tienes proy_2025, usa el total 2025? usamos el último de 2024 conocido
+                       926,   # valor 2024 que mostraste (ajusta si tu objeto tiene otro)
+                       926),
+  Pron_Final_2025 = ifelse(exists("proy_2025") && "Fallecidos_total" %in% names(proy_2025),
+                           proy_2025$Fallecidos_total, # 1002 según lo mostrado
+                           1002)
+)
+
+# 3) Unir y ordenar (orden por Tipo alfabéticamente o por otra columna si prefieres)
+pronosticos_combined_2025 <- bind_rows(fallecidos_row_2025, lesiones_sel_2025) %>%
+  arrange(Tipo)
+
+# 4) Mostrar resultado
+print(pronosticos_combined_2025)
+
+
+```
+
+```{r}
+library(dplyr)
+library(tibble)
+
+# Extraer solo las columnas requeridas de lesiones
+lesiones_sel_2025 <- pronosticos_2025_lesiones_2024 %>%
+  select(Tipo, Ultimo_2024, Pron_Final_2025)
+
+# Crear filas separadas para fallecidos
+fallecidos_sep_2025 <- tibble(
+  Tipo = c("fallecidos_total", "fallecidos_sitio", "fallecidos_hospital_traslado"),
+  Ultimo_2024 = c(926, 513, 413),  # <<--- AQUÍ PONEME LOS VALORES 2024
+  Pron_Final_2025 = c(proy_2025$Fallecidos_total,
+                      proy_2025$Fallecidos_sitio,
+                      proy_2025$Fallecidos_hospital_traslado)
+)
+
+# Unir todo
+pronosticos_2025_final <- bind_rows(lesiones_sel_2025, fallecidos_sep_2025) %>%
+  arrange(Tipo)
+
+print(pronosticos_2025_final)
+
+```
+
+#Ver esta proyeccion de lesionados
+*proyecciones a 2025 de lesionados*
+```{r}
+# Factor de aumento basado en fallecidos
+factor_aumento <- proy_2025$Fallecidos_total / 926  # 1002 / 926
+
+pronosticos_2025_final_ajustado <- pronosticos_2025_final %>%
+  mutate(
+    Pron_Final_2025_ajust = case_when(
+      grepl("fallecidos", Tipo) ~ Pron_Final_2025,  # fallecidos no se ajustan porque ya están calculados
+      TRUE ~ round(Ultimo_2024 * factor_aumento)     # aplicar factor a lesiones
+    )
+  ) %>%
+  select(Tipo, Ultimo_2024, Pron_Final_2025_ajust) %>%
+  arrange(Tipo)
+
+print(pronosticos_2025_final_ajustado)
+
+```
+
+#PIBs
+```{r}
+PIB2024 <- 51100000000000   # ₡51.1 billones
+# Tasa de crecimiento esperada (4.3%)
+tasa_crecimiento <- 0.043
+# Proyección del PIB para 2025
+PIB2025 <- PIB2024 * (1 + tasa_crecimiento)
+PIB2025
+```
+
+

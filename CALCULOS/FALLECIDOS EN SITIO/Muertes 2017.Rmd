@@ -1,0 +1,428 @@
+---
+title: "MUERTES"
+author: "Fernanda"
+date: "2025-08-06"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+#Base COSEVI Personas
+```{r}
+personas <- read.csv("~/Desktop/Practica I/CIOdD/DATOS/COSEVI/Base de personas  en accidentes 2017_ 2023_UTF8.csv", sep=";")
+```
+
+```{r}
+str(personas)
+```
+
+
+```{r}
+library(dplyr)
+
+personas_2017 <- personas %>%
+  filter(Año == 2017)
+nrow(personas_2017)
+```
+
+
+```{r}
+library(dplyr)
+
+# Filtrar solo los fallecidos
+fallecidos_2017 <- personas_2017 %>%
+  filter(Tipo.de.lesión == "Muerte")
+
+# Conteo por mes
+fallecidos_mes.personas <- fallecidos_2017 %>%
+  group_by(Mes) %>%
+  summarise(cantidad = n(), .groups = "drop") %>%
+  arrange(Mes)
+
+total_fallecidos <- nrow(fallecidos_2017)
+
+
+```
+
+
+
+```{r}
+library(dplyr)
+
+conteo_lesion_mes <- personas_2017 %>%
+  group_by(Mes, Tipo.de.lesión) %>%
+  summarise(cantidad = n(), .groups = "drop") %>%
+  arrange(Mes, Tipo.de.lesión)
+
+```
+
+#Base COSEVI
+```{r}
+base_cosevi <- read.csv("~/Desktop/Practica I/CIOdD/DATOS/COSEVI/base victimas.csv", encoding="UTF-8-MAC", sep=";")
+```
+
+```{r}
+str(base_cosevi)
+```
+
+```{r}
+library(dplyr)
+accidentes_por_año <- base_cosevi %>%
+  group_by(Año) %>%
+  summarise(total_accidentes = n()) %>%
+  arrange(Año)
+print(accidentes_por_año)
+sum(accidentes_por_año$total_accidentes)
+```
+#Base Materiales
+```{r}
+library(readr)
+materiales <- read_delim("4 Base de accidentes MATERIALES 2017_ 2023_UTF8.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+nrow(materiales)
+```
+
+#Base INS 
+```{r}
+Accidentes_INS <- read_excel("~/Desktop/Practica I/CIOdD/DATOS/SOA-SUGESE/Accidentes INS.xlsx")
+```
+
+
+```{r}
+str(Accidentes_INS)
+```
+
+#2017
+```{r}
+total_2017 <- accidentes_por_año %>%
+  filter(Año == 2017) %>%
+  summarise(total = sum(total_accidentes)) %>%
+  pull(total); total_2017
+```
+
+```{r}
+library(dplyr)
+
+accidentes_2017_por_mes <- base_cosevi %>%
+  filter(Año == 2017) %>%      
+  group_by(Mes) %>%            
+  summarise(total_accidentes = n()) %>% 
+  arrange(Mes)                 
+
+```
+
+
+```{r}
+library(haven)
+DEFU2017PAD <- read_sav("~/Desktop/Practica I/CIOdD/DATOS/DATOS INEC/DEFU2017PAD.sav")
+```
+
+```{r}
+# Ordena la base de forma descendente por la variable 'causamuer'
+DEFU2017PAD_ordenada <- DEFU2017PAD[order(DEFU2017PAD$causamuer, decreasing = TRUE), ]
+sub_base2017<- DEFU2017PAD_ordenada[1902:2792, ]
+```
+
+
+```{r}
+library(dplyr)
+resumen_por_mes2017 <- sub_base2017 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+resumen_por_mes2017
+sum(resumen_por_mes2017$cantidad_muertes)
+```
+
+*Heridos Graves y Fallecidos*
+```{r}
+library(dplyr)
+library(stringr)  # para manipular texto fácilmente
+
+meses_es <- c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+              "Julio", "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre")
+
+accidentes_graves_o_muertos2017 <- base_cosevi %>%
+  filter(Año == 2017, trimws(Clase.de.accidente) == "Con muertos o graves") %>%
+  mutate(Mes_limpio = str_remove(Mes, "^[A-Z]\\.\\s*")) %>%  # elimina la letra + punto + espacio
+  mutate(Mes_num = match(Mes_limpio, meses_es)) %>%
+  group_by(Mes_num) %>%
+  summarise(total_muertosograves = n(), .groups = "drop")
+
+# Ahora unimos con resumen_por_mes2017 renombrando mesdef a Mes_num
+muertes2017 <- resumen_por_mes2017 %>%
+  rename(Mes_num = mesdef)
+
+# Unir y calcular heridos graves estimados
+heridos_graves_estimados2017 <- accidentes_graves_o_muertos2017 %>%
+  left_join(muertes2017, by = "Mes_num") %>%
+  mutate(heridos_graves_est = total_muertosograves - cantidad_muertes,
+         Mes = meses_es[Mes_num]) %>%
+  select(Mes, total_muertosograves, cantidad_muertes, heridos_graves_est)
+
+```
+
+```{r}
+library(glue)
+library(scales)
+
+heridos_graves_total <- sum(heridos_graves_estimados2017$heridos_graves_est)
+muertes_estimadas_total <- sum(heridos_graves_estimados2017$cantidad_muertes)
+accidentes_con_muertes_o_graves_total <- sum(heridos_graves_estimados2017$total_muertosograves)
+
+
+cat(glue("
+Resumen 2017:
+- Heridos graves estimados: {round(heridos_graves_total)}
+- Muertes estimadas: {round(muertes_estimadas_total)}
+- Total accidentes con muertes o graves: {round(accidentes_con_muertes_o_graves_total)}
+"))
+
+```
+
+
+```{r}
+library(dplyr)
+library(stringr)
+
+base_cosevi_limpia_2017 <- base_cosevi %>%
+  filter(Año == 2017) %>%
+  mutate(Mes_limpio = str_remove(Mes, "^[A-Z]\\.\\s*"),
+         Mes_num = match(Mes_limpio, c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                                       "Julio", "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre")))
+
+heridos_leves_total_2017 <- base_cosevi_limpia_2017 %>%
+  filter(Clase.de.accidente == "Solo heridos leves") %>%
+  summarise(total_heridos_leves = n())
+
+heridos_leves_total_2017
+
+```
+
+
+*Base nueva 2017 separada por fallecidos, graves y leves, creada con COSEVI y fallecidos INEC*
+```{r}
+library(dplyr)
+
+# Filtrar solo 2017
+base_cosevi_2017 <- base_cosevi %>% filter(Año == 2017)
+
+# 1. Base Fallecidos
+fallecidos_2017 <- base_cosevi_2017 %>%
+  filter(trimws(Clase.de.accidente) == "Con muertos o graves") %>%
+  slice_head(n = 891) %>%
+  mutate(Clase.aproximada = "Fallecido")
+
+# 2. Base Heridos graves
+heridos_graves_2017 <- base_cosevi_2017 %>%
+  filter(trimws(Clase.de.accidente) == "Con muertos o graves") %>%
+  slice(-(1:891)) %>%
+  mutate(Clase.aproximada = "Herido grave")
+
+# 3. Base Heridos leves
+heridos_leves_2017 <- base_cosevi_2017 %>%
+  filter(trimws(Clase.de.accidente) == "Solo heridos leves") %>%
+  mutate(Clase.aproximada = "Herido leve")
+
+# Juntar todo y eliminar la columna Clase.de.accidente
+base_separada_2017 <- bind_rows(fallecidos_2017, heridos_graves_2017, heridos_leves_2017) %>%
+  select(-Clase.de.accidente)
+
+# Revisar conteos
+table(base_separada_2017$Clase.aproximada)
+
+```
+
+
+```{r}
+#Guardar base como csv 
+write.csv(base_separada_2017, 
+          file = "base_separada_2017.csv", 
+          row.names = FALSE, 
+          fileEncoding = "UTF-8")
+```
+
+```{r}
+str(base_separada_2017)
+```
+
+*Escenarios*
+```{r}
+library(dplyr)
+library(glue)
+
+# Totales calculados desde la base
+total_accidentes_anual <- base_separada_2017 %>%
+  filter(Clase.aproximada %in% c("Fallecido", "Herido grave")) %>%
+  nrow()
+
+total_2017 <- nrow(base_separada_2017)
+
+# Dato INEC total
+muertes_totales2017 <- 891  
+
+# Escenarios de muertes en sitio y hospital
+muertes_en_sitio2017 <- muertes_totales2017 * 0.4   
+muertes_en_hospital2017 <- muertes_totales2017 * 0.6 
+
+# Heridos graves estimados
+heridos_graves_estimados <- total_accidentes_anual - muertes_totales2017
+
+# Escenarios de discapacidad
+discapacidad_permanente <- heridos_graves_estimados * 0.3  
+incapacidad_temporal <- heridos_graves_estimados * 0.7     
+
+# Heridos leves (dato estimado)
+heridos_leves <- 12474
+
+# Resumen
+cat(glue("
+Resumen 2017:
+- Muertes 2017: {round(muertes_totales2017)}
+- Muertes en sitio 2017 (40%): {round(muertes_en_sitio2017)}
+- Muertes en hospital 2017 (60%): {round(muertes_en_hospital2017)}
+- Total accidentes con muertes o graves 2017: {round(total_accidentes_anual)}
+- Heridos graves estimados 2017: {round(heridos_graves_estimados)}
+- Discapacidad permanente 2017 (30% heridos graves): {round(discapacidad_permanente)}
+- Incapacidad temporal 2017 (70% heridos graves): {round(incapacidad_temporal)}
+- Heridos leves estimados 2017: {round(heridos_leves)}
+- Total accidentes 2017: {round(total_2017)}
+"))
+
+
+```
+
+#Codigo con el INS
+```{r}
+library(dplyr)
+library(stringr)
+
+#Cosevi 2017
+cosevi_2017 <- base_cosevi %>%
+  filter(Año == 2017) %>%
+  mutate(
+    Mes_nombre = str_remove(Mes, "^[A-Z]\\.\\s"), # quita el "A. ", "B. ", etc.
+    Mes_nombre = str_trim(Mes_nombre)
+  )
+
+acc_con_muertos_o_graves <- cosevi_2017 %>%
+  filter(str_detect(Clase.de.accidente, regex("muertos|graves", ignore_case = TRUE))) %>%
+  group_by(Mes_nombre) %>%
+  summarise(acc_con_muertos_o_graves = n(), .groups = "drop")
+
+#INS 
+muertos_INS <- Accidentes_INS %>%
+  rename(Año = 1, Mes_nombre = 2, Accidentes = 3, Lesionadas = 4, Fallecidas = 5) %>%
+  filter(Año == "2017") %>%
+  mutate(Fallecidas = as.numeric(Fallecidas)) %>%
+  select(Mes_nombre, Fallecidas)
+
+# INEC 
+muertos_INEC <- resumen_por_mes2017 %>%
+  mutate(
+    Mes_nombre = case_when(
+      as.integer(mesdef) == 1 ~ "Enero",
+      as.integer(mesdef) == 2 ~ "Febrero",
+      as.integer(mesdef) == 3 ~ "Marzo",
+      as.integer(mesdef) == 4 ~ "Abril",
+      as.integer(mesdef) == 5 ~ "Mayo",
+      as.integer(mesdef) == 6 ~ "Junio",
+      as.integer(mesdef) == 7 ~ "Julio",
+      as.integer(mesdef) == 8 ~ "Agosto",
+      as.integer(mesdef) == 9 ~ "Setiembre",
+      as.integer(mesdef) == 10 ~ "Octubre",
+      as.integer(mesdef) == 11 ~ "Noviembre",
+      as.integer(mesdef) == 12 ~ "Diciembre"
+    )
+  ) %>%
+  select(Mes_nombre, Muertes_INEC = cantidad_muertes)
+
+# Unir todo 
+resumen_final <- acc_con_muertos_o_graves %>%
+  left_join(muertos_INS, by = "Mes_nombre") %>%
+  left_join(muertos_INEC, by = "Mes_nombre") %>%
+  mutate(
+    prop_accidentes_con_muertos_INS = Fallecidas / acc_con_muertos_o_graves,
+    prop_accidentes_con_muertos_INEC = Muertes_INEC / acc_con_muertos_o_graves
+  ) %>%
+  arrange(match(Mes_nombre, c("Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                              "Julio","Agosto","Setiembre","Octubre","Noviembre","Diciembre")))
+
+resumen_final
+
+```
+
+
+
+
+#Creacion base discapacitados codigo Rodrigo 
+```{r}
+library(dplyr)
+library(readr)
+library(car)
+library(stringr)
+
+# Carga la base original
+base <- read_delim("DiscapacitadosFinal.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+# Limpiar datos incompletos en variables clave
+base_clean <- base %>%
+  filter(`Edad quinquenal` != "Desconocida",
+         Edad != "Desconocido",
+         Sexo != "Desconocido")
+
+# Recodificar Rol (ajusta si el nombre o valores cambian)
+Rol_num <- as.numeric(base_clean$Rol)
+Rol_recoded <- recode(Rol_num, "4='Motociclista'; 9='Pasajero moto'")
+base_clean$Rol <- as.factor(Rol_recoded)
+
+# Recodificar Edad quinquenal (ajusta niveles y recodificación si cambian)
+base_clean$`Edad quinquenal` <- factor(base_clean$`Edad quinquenal`)
+
+Edadq_recoded <- recode(base_clean$`Edad quinquenal`, 
+                        "1='De 0 a 4';10='De 5 a 9'; 2='De 10 a 14';3='De 15 a 19';4='De 20 a 24';5='De 25 a 29';6='De 30 a 34';7='De 35 a 39';8='De 40 a 44';9='De 45 a 49';11='De 50 a 54';12='De 55 a 59';13='De 60 a 64';14='De 65 a 69';15='De 70 a 74';17='Mayor a 75'")
+base_clean$`Edad quinquenal` <- as.factor(Edadq_recoded)
+
+# Recodificar Sexo (ajusta valores si necesario)
+Sexo_num <- as.numeric(base_clean$Sexo)
+Sexo_recoded <- recode(Sexo_num, "2='Hombre'; 3='Mujer'")
+base_clean$Sexo <- as.factor(Sexo_recoded)
+
+# Recodificar Día (ajusta niveles y recodificación si necesario)
+base_clean$Día <- as.factor(base_clean$Día)
+Día_num <- as.numeric(base_clean$Día)
+Día_recoded <- recode(Día_num, "1='Domingo';2='Jueves';3='Lunes';4='Martes';5='Miércoles';6='Sábado';7='Viernes'")
+base_clean$Día <- as.factor(Día_recoded)
+
+# Recodificar Provincia (ajusta niveles y recodificación si necesario)
+base_clean$Provincia <- as.factor(base_clean$Provincia)
+Prov_num <- as.numeric(base_clean$Provincia)
+Prov_recoded <- recode(Prov_num, "1='Alajuela';2='Cartago';3='Guanacaste';4='Heredia';5='Limón';6='Puntarenas';7='San José'")
+base_clean$Provincia <- as.factor(Prov_recoded)
+
+# Recodificar Cantón (ajusta niveles y recodificación si necesario)
+base_clean$Cantón <- as.factor(base_clean$Cantón)
+Canton_num <- as.numeric(base_clean$Cantón)
+Canton_recoded <- recode(Canton_num,
+  "1='Abangares';2='Acosta';3='Aguirre o Quepos';4='Alajuela';5='Alajuelita';6='Alvarado';7='Aserrí';8='Atenas';9='Bagaces';10='Barva';11='Belén';12='Buenos Aires';13='Cañas';14='Carrillo';15='Cartago';16='Corredores';17='Coto Brus';18='Curridabat';19='Desamparados';20='Dota';21='El Guarco';22='Escazú';23='Esparza';24='Flores';25='Garabito';26='Goicoechea';27='Golfito';28='Grecia';29='Guácimo';30='Guatuso';31='Heredia';32='Hojancha';33='Jiménez';34='La Cruz';35='La Unión';36='León Cortés';37='Liberia';38='Limón';39='Los Chiles';40='Matina';41='Montes de Oca';42='Montes de Oro';43='Mora';44='Moravia';45='Nandayure';46='Naranjo';47='Nicoya';48='Oreamuno';49='Orotina';50='Osa';51='Pérez Zeledón';52='Palmares';53='Paraíso';54='Parrita';55='Poás';56='Pococí';57='Puntarenas';58='Puriscal';59='San Carlos';60='San Isidro';61='San José';62='San Mateo';63='San Pablo';64='San Rafael';65='San Ramón';66='Santa Ana';67='Santa Bárbara';68='Santa Cruz';69='Santo Domingo';70='Sarapiquí';71='Siquirres';72='Talamanca';73='Tarrazu';74='Tibás';75='Tilarán';76='Turrialba';77='Turrubares';78='Upala';79='Vázquez de Coronado';80='Valverde Vega';81='Zarcero'")
+base_clean$Cantón <- as.factor(Canton_recoded)
+
+# ----------------------
+# Subconjunto Fallecidos (ajusta el nombre y valor de la columna que indique fallecimiento)
+# ----------------------
+# Supongamos que la columna que indica fallecido se llama "Estado" y el valor es "Fallecido"
+base_fallecidos <- base_clean %>%
+  filter(Estado == "Fallecido")
+
+# ----------------------
+# Subconjunto Discapacitados (ajusta el nombre y valor de la columna que indique discapacidad)
+# ----------------------
+# Supongamos que la columna que indica discapacidad se llama "Discapacidad" y el valor es "Sí"
+base_discapacitados <- base_clean %>%
+  filter(Discapacidad == "Sí")
+
+# Guarda las bases para usarlas después
+save(base_fallecidos, file = "BaseFallecidos.Rdata")
+save(base_discapacitados, file = "BaseDiscapacitados.Rdata")
+
+```
+

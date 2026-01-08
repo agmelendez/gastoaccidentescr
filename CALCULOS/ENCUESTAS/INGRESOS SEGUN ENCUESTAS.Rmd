@@ -1,0 +1,402 @@
+---
+title: "Untitled"
+author: "Fernanda"
+date: "2025-09-30"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+library(haven)
+enaho<- read_sav("Desktop/PRACTICA /CIOdD/DATOS/ENAHO/GPES-ELAB-GEBD-ENAHO-2024_BdPublica.sav")
+```
+
+```{r}
+enigh <- read_sav("Desktop/PRACTICA /CIOdD/DATOS/ENIGH 20/Enigh2018_CreaVar_ Hogar_PUBLICA.sav")
+```
+
+#Enigh
+```{r}
+names(enigh)
+```
+
+```{r}
+library(dplyr)
+
+enigh_subset <- enigh %>%
+  select(ID_HOGAR, FACTOR, ID_ZONA,
+         H083_EDAD_JEFE, H084_ESCOLARIDAD_JEFE,
+         H056_DISPONE_VEHICULO, H057_CANT_VEHICULOS,
+         H058_AUTOS_HOGAR, H059_MOTOS_HOGAR, H060_OTROS_HOGAR,
+         H135_SALARIO_BRUTO_MONET, H136_SALARIO_NETO_MONET,
+         H182_INGRESO_MONET_CORR_NETO)
+
+```
+
+```{r}
+enigh_clean <- enigh_subset %>%
+  filter(!is.na(H083_EDAD_JEFE), 
+         !is.na(H084_ESCOLARIDAD_JEFE))
+
+```
+
+```{r}
+#Calcular edad y profesión promedio
+enigh_clean <- enigh_clean %>%
+  mutate(educacion = case_when(
+    H084_ESCOLARIDAD_JEFE <= 3 ~ "Primaria o menos",
+    H084_ESCOLARIDAD_JEFE <= 6 ~ "Secundaria",
+    H084_ESCOLARIDAD_JEFE > 6 ~ "Universitaria"
+  ))
+
+```
+
+```{r}
+promedios <- enigh_clean %>%
+  group_by(H056_DISPONE_VEHICULO) %>%
+  summarise(
+    edad_promedio = mean(H083_EDAD_JEFE, na.rm = TRUE),
+    ingreso_promedio = mean(H182_INGRESO_MONET_CORR_NETO, na.rm = TRUE),  # ingreso monetario corriente neto del hogar
+    n = n()
+  )
+promedios
+```
+0 [No] → Hogares que no tienen vehículo.
+1 [Si] → Hogares que sí tienen vehículo.
+edad_promedio → edad promedio del jefe de hogar en cada grupo.
+ingreso_promedio → ingreso monetario corriente neto mensual promedio de los hogares en cada grupo.
+n → cantidad de hogares en ese grupo.
+
+**VER ACA**
+Ambos → tienen autos y motos propios (sin importar compartidos).
+Solo auto → tienen solo autos propios.
+Solo moto → tienen solo motos propios.
+Ambos compartidos → tienen autos y/o motos solo compartidos, sin vehículos propios.
+Ninguno propio → no tienen autos ni motos propios, pueden tener compartidos o no.
+Ninguno absoluto → no tienen autos ni motos propios ni compartidos.
+Motos y autos → indiferente de si son compartidos o propios.
+Aquí te pongo el código en R para crear estas categorías:
+\Ingreso monetario corriente neto del hogar
+```{r}
+#Por cantidad de vehiculos 
+library(dplyr)
+
+enigh2 <- enigh %>%
+  mutate(
+    autos = ifelse(is.na(H058_AUTOS_HOGAR) | H058_AUTOS_HOGAR == 99, 0, H058_AUTOS_HOGAR),
+    motos = ifelse(is.na(H059_MOTOS_HOGAR) | H059_MOTOS_HOGAR == 99, 0, H059_MOTOS_HOGAR),
+    autos_comp = ifelse(is.na(H064_AUTOS_COMPARTIDO) | H064_AUTOS_COMPARTIDO == 99, 0, H064_AUTOS_COMPARTIDO),
+    motos_comp = ifelse(is.na(H065_MOTOS_COMPARTIDO) | H065_MOTOS_COMPARTIDO == 99, 0, H065_MOTOS_COMPARTIDO),
+    tipo_vehiculo = case_when(
+      autos > 0 & motos == 0 & autos_comp == 0 & motos_comp == 0 ~ "Solo auto propio",
+      autos == 0 & motos == 0 & autos_comp > 0 & motos_comp == 0 ~ "Solo auto compartido",
+      autos == 0 & motos > 0 & autos_comp == 0 & motos_comp == 0 ~ "Solo moto propio",
+      autos == 0 & motos == 0 & autos_comp == 0 & motos_comp > 0 ~ "Solo moto compartido",
+      autos > 0 & motos > 0 ~ "Ambos propios",
+      autos == 0 & motos == 0 & autos_comp > 0 & motos_comp > 0 ~ "Ambos compartidos",
+      (autos + autos_comp) > 0 & (motos + motos_comp) > 0 ~ "Ambos (cualquier tipo)",
+      autos == 0 & motos == 0 & autos_comp == 0 & motos_comp == 0 ~ "Ninguno (cualquier tipo)",
+      TRUE ~ NA_character_
+    ),
+    educacion = case_when(
+      H084_ESCOLARIDAD_JEFE <= 6 ~ "Primaria o menos",
+      H084_ESCOLARIDAD_JEFE <= 12 ~ "Secundaria",
+      H084_ESCOLARIDAD_JEFE > 12 ~ "Universitaria",
+      TRUE ~ "Otro"
+    )
+  ) %>%
+  filter(!is.na(tipo_vehiculo), !is.na(H182_INGRESO_MONET_CORR_NETO))
+
+# Resumen de ingreso promedio solo por tipo de vehículo
+res_solo <- enigh2 %>%
+  group_by(tipo_vehiculo) %>%
+  summarise(
+    ingreso_promedio = weighted.mean(H182_INGRESO_MONET_CORR_NETO, FACTOR, na.rm = TRUE),
+    n = n()
+  )
+
+res_solo
+```
+
+
+```{r}
+#Por cantidad de vehiculos, educación 
+library(dplyr)
+
+# Limpiamos y categorizamos los vehículos
+enigh2 <- enigh %>%
+  mutate(
+    autos = ifelse(is.na(H058_AUTOS_HOGAR) | H058_AUTOS_HOGAR == 99, 0, H058_AUTOS_HOGAR),
+    motos = ifelse(is.na(H059_MOTOS_HOGAR) | H059_MOTOS_HOGAR == 99, 0, H059_MOTOS_HOGAR),
+    autos_comp = ifelse(is.na(H064_AUTOS_COMPARTIDO) | H064_AUTOS_COMPARTIDO == 99, 0, H064_AUTOS_COMPARTIDO),
+    motos_comp = ifelse(is.na(H065_MOTOS_COMPARTIDO) | H065_MOTOS_COMPARTIDO == 99, 0, H065_MOTOS_COMPARTIDO),
+    tipo_vehiculo = case_when(
+      autos > 0 & motos == 0 & autos_comp == 0 & motos_comp == 0 ~ "Solo auto propio",
+      autos == 0 & motos == 0 & autos_comp > 0 & motos_comp == 0 ~ "Solo auto compartido",
+      autos == 0 & motos > 0 & autos_comp == 0 & motos_comp == 0 ~ "Solo moto propio",
+      autos == 0 & motos == 0 & autos_comp == 0 & motos_comp > 0 ~ "Solo moto compartido",
+      autos > 0 & motos > 0 ~ "Ambos propios",
+      autos == 0 & motos == 0 & autos_comp > 0 & motos_comp > 0 ~ "Ambos compartidos",
+      (autos + autos_comp) > 0 & (motos + motos_comp) > 0 ~ "Ambos (cualquier tipo)",
+      autos == 0 & motos == 0 & autos_comp == 0 & motos_comp == 0 ~ "Ninguno (cualquier tipo)",
+      TRUE ~ NA_character_
+    ),
+    educacion = case_when(
+      H084_ESCOLARIDAD_JEFE <= 6 ~ "Primaria o menos",
+      H084_ESCOLARIDAD_JEFE <= 12 ~ "Secundaria",
+      H084_ESCOLARIDAD_JEFE > 12 ~ "Universitaria",
+      TRUE ~ "Otro"
+    )
+  ) %>%
+  filter(!is.na(tipo_vehiculo), !is.na(H182_INGRESO_MONET_CORR_NETO), !is.na(educacion))
+
+# Resumen ponderado por tipo de vehículo y educación
+res_edu <- enigh2 %>%
+  group_by(tipo_vehiculo, educacion) %>%
+  summarise(
+    ingreso_promedio = weighted.mean(H182_INGRESO_MONET_CORR_NETO, FACTOR, na.rm = TRUE),
+    n = n()
+  )
+
+# Resumen ponderado por tipo de vehículo, educación y zona
+
+res_edu_zona <- enigh2 %>%
+  group_by(tipo_vehiculo, educacion, ID_ZONA) %>%
+  summarise(
+    ingreso_promedio = weighted.mean(H182_INGRESO_MONET_CORR_NETO, FACTOR, na.rm = TRUE),
+    n = n()
+  )
+
+res_edu
+res_edu_zona
+
+```
+
+*Proceso de actualización*
+Factor actualización- IPC2024/IPC2018
+```{r}
+# Definir el factor de actualización
+factor_actualizacion <- 110.39 / 102.9
+
+# Aplicar el ajuste a los ingresos de 2018
+res_2024 <- res_solo %>%
+  mutate(
+    ingreso_2024 = ingreso_promedio * factor_actualizacion
+  )
+
+# Mostrar los resultados ajustados
+res_2024
+
+```
+
+
+```{r}
+factor_actualizacion <- 110.39 / 102.9  # IPC Costa Rica 2018→2024
+
+res_edu_2024 <- res_edu %>%
+  mutate(
+    ingreso_2024 = ingreso_promedio * factor_actualizacion
+  )
+res_edu_2024
+```
+
+```{r}
+res_edu_zona_2024 <- res_edu_zona %>%
+  mutate(
+    ingreso_2024 = ingreso_promedio * factor_actualizacion
+  )
+res_edu_zona_2024
+```
+
+
+
+#ENAHO
+
+```{r}
+library(dplyr)
+
+enaho_jefes <- enaho %>%
+  filter(A3 == 1) %>%   # Solo jefe de hogar
+  select(ID_HOGAR, FACTOR, A5, NivInst, CondAct, OcupEmpPri, ipcb, V19)
+
+```
+
+```{r}
+enaho_jefes <- enaho_jefes %>%
+  filter(!is.na(A5), !is.na(NivInst), !is.na(ipcb))
+```
+
+```{r}
+enaho_jefes <- enaho_jefes %>%
+  mutate(
+    educacion = case_when(
+      NivInst %in% 0:2 ~ "Primaria o menos",
+      NivInst %in% 3:5 ~ "Secundaria",
+      NivInst %in% 6:8 ~ "Universitaria",
+      TRUE ~ "Otro"
+    ),
+    tiene_vehiculo = ifelse(V19 == 1, "Sí", "No")
+  )
+```
+
+```{r}
+#Estimar edad y profesión promedio (ponderando)
+resultados <- enaho_jefes %>%
+  group_by(tiene_vehiculo, educacion) %>%
+  summarise(
+    edad_promedio = weighted.mean(A5, FACTOR, na.rm = TRUE),
+    ingreso_promedio = weighted.mean(ipcb, FACTOR, na.rm = TRUE),
+    n = n()
+  )
+print(resultados)
+```
+
+```{r}
+library(dplyr)
+
+enaho %>%
+  mutate(tipo_vehiculo = case_when(
+    H056A == 1 ~ "Auto",
+    H056B == 1 ~ "Moto",
+    TRUE ~ "Otro/no tiene"
+  )) %>%
+  group_by(tipo_vehiculo, educacion) %>%
+  summarise(
+    edad_promedio = weighted.mean(edad, FACTOR),
+    ingreso_promedio = weighted.mean(ingreso, FACTOR),
+    n = n()
+  )
+
+```
+
+```{r}
+library(dplyr)
+
+enaho %>%
+  # Clasificar tipo de vehículo
+  mutate(tipo_vehiculo = case_when(
+    V18J == 1 & V18K == 0 ~ "Solo Auto",
+    V18J == 0 & V18K == 1 ~ "Solo Moto",
+    V18J == 1 & V18K == 1 ~ "Auto y Moto",
+    TRUE ~ "Sin vehículo"
+  )) %>%
+  # Agrupar por tipo de vehículo y nivel educativo
+  group_by(tipo_vehiculo, NivInst) %>%
+  summarise(
+    edad_promedio = weighted.mean(V5, FACTOR, na.rm = TRUE),    # V5 = edad
+    ingreso_promedio = weighted.mean(V62, FACTOR, na.rm = TRUE), # V62 = ingreso (ajusta si tu ingreso está en otra columna)
+    n = n()
+  )
+
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+# 1. Seleccionar variables relevantes para proxy y vehículos
+vars_interes <- c(
+  "V18J", "V18K",              # Tiene auto, tiene moto
+  "V6A", "V4", "V5", "V7A", "V7B", "V7C",  # Vivienda y servicios
+  "V8", "V9", "V10", "V11", "V12",
+  "V13A", "V13B", "V14A", "V14B",
+  "V15", "V16"                 # Trabajo y educación de miembros del hogar
+)
+
+enaho_sel <- enaho %>%
+  select(all_of(vars_interes))
+
+# 2. Eliminar filas con NA en cualquiera de estas variables
+enaho_clean <- enaho_sel %>%
+  drop_na()
+
+# 3. Crear proxy SES
+# Variables codificadas de forma que valores más altos = mejor nivel
+# Ajusta según codificación de ENAHO (ejemplo simplificado)
+enaho_clean <- enaho_clean %>%
+  mutate(
+    SES_proxy = rowSums(select(., V6A, V4, V5, V7A, V7B, V7C, V8, V9, V10, V11, V12,
+                               V13A, V13B, V14A, V14B, V15, V16))
+  )
+
+# 4. Crear variable tipo de vehículo
+enaho_clean <- enaho_clean %>%
+  mutate(
+    tipo_vehiculo = case_when(
+      V18J == 1 & V18K == 1 ~ "Auto y moto",
+      V18J == 1 & V18K == 0 ~ "Solo auto",
+      V18J == 0 & V18K == 1 ~ "Solo moto",
+      TRUE ~ "Sin vehículo"
+    )
+  )
+
+```
+
+V1 – Tipo de vivienda (casa, apartamento, cuarto precario, etc.)
+V2A – ¿La vivienda es propia totalmente pagada?
+V3 – Número de habitaciones
+V4 – Material predominante en el techo
+V5 – Material predominante en el piso
+V6 – ¿La vivienda tiene cielo raso?
+V6A – ¿La vivienda se encuentra sobre pilotes?
+V7A, V7B, V7C – Material de paredes / estructura
+HOGAR – Tamaño del hogar (personas que viven en el hogar)
+Justificación: Estas variables reflejan características físicas y estructurales de la vivienda, así como la propiedad y tamaño del hogar, que están altamente correlacionadas con los ingresos y la riqueza de los hogares. Materiales más duraderos, vivienda propia, mayor número de habitaciones y mejor infraestructura indican mayor nivel socioeconómico. Por ello, al combinarlas se puede generar un proxy de ingreso o SES confiable, que permite clasificar y comparar hogares incluso cuando no se dispone del ingreso monetario directo.
+
+```{r}
+# Crear variable tipo_vehiculo
+enaho_clean <- enaho_clean %>%
+  mutate(
+    tipo_vehiculo = case_when(
+      V18J == 4 & V18K == 6 ~ "Auto y moto",
+      V18J == 4 & V18K == 5 ~ "Solo auto",
+      V18J == 3 & V18K == 6 ~ "Solo moto",
+      V18J == 3 & V18K == 5 ~ "Sin vehículo",
+      TRUE ~ "Sin información"
+    )
+  )
+
+# Resumen por tipo de vehículo
+resumen_vehiculo <- enaho_clean %>%
+  group_by(tipo_vehiculo) %>%
+  summarise(
+    SES_promedio = mean(SES_proxy, na.rm = TRUE),
+    n = n()
+  )
+
+print(resumen_vehiculo)
+
+
+```
+
+**VER ACA** 
+```{r}
+# Invertir si es necesario: SES_aprox bajo → ingreso bajo
+enaho_limpia <- enaho_clean%>%
+  mutate(
+    ingreso_aprox = ingreso_min + 
+      (SES_proxy - min(SES_proxy)) / (max(SES_proxy) - min(SES_proxy)) * 
+      (ingreso_max - ingreso_min)
+  )
+
+# Si SES_aprox está invertido (mayor SES_aprox = peor condición), invertirlo
+enaho_limpia <- enaho_limpia %>%
+  mutate(
+    SES_inv = max(SES_proxy) - SES_proxy,
+    ingreso_aprox = ingreso_min + 
+      (SES_inv - min(SES_inv)) / (max(SES_inv) - min(SES_inv)) * 
+      (ingreso_max - ingreso_min)
+  )
+
+# Resumen por tipo de vehículo
+tabla_resumen <- enaho_limpia %>%
+  group_by(tipo_vehiculo) %>%
+  summarise(
+    SES_promedio = mean(SES_proxy, na.rm = TRUE),
+    ingreso_promedio = mean(ingreso_aprox, na.rm = TRUE),
+    n = n()
+  )
+
+tabla_resumen
+
+```
+

@@ -1,0 +1,607 @@
+---
+title: "Base INEC"
+author: "Fernanda"
+date: "2025-07-23"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+V01–V09: Peatón lesionado
+V10–V19: Ciclista lesionado
+V20–V29: Motociclista lesionado
+V30–V39: Ocupante de automóvil de tres ruedas
+V40–V49: Ocupante de automóvil
+V50–V59: Ocupante de camioneta o furgoneta
+V60–V69: Ocupante de vehículo pesado
+V70–V79: Ocupante de autobús
+V80: Ocupante de vehículo de tracción animal
+V81–V89: Otras formas de transporte y no especificados
+```{r}
+codigos_interes <- c(
+  "V05", "V09", "V19", "V29", "V49", "V80", "V89", "V95",
+  "W17", "W19", "W49", "W74", "W76", "W77", "W79", "W80", "W84", "W87",
+  "X00", "X09", "X20", "X23", "X29", "X33", "X42", "X45", "X49", "X59"
+)
+```
+
+####2017###
+```{r}
+library(haven)
+DEFU2017PAD <- read_sav("Desktop/Practica I/CIOdD/DATOS/DATOS INEC/DEFU2017PAD.sav")
+```
+
+```{r}
+# Ordena la base de forma descendente por la variable 'causamuer'
+DEFU2017PAD_ordenada <- DEFU2017PAD[order(DEFU2017PAD$causamuer, decreasing = TRUE), ]
+sub_base2017<- DEFU2017PAD_ordenada[1902:2792, ]
+```
+
+```{r}
+#Tabla frecuencias
+table(sub_base2017$causamuer)
+```
+
+```{r}
+table(sub_base2017$des_causa)
+```
+
+```{r}
+library(dplyr)
+resumen_por_mes2017 <- sub_base2017 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+resumen_por_mes2017
+sum(resumen_por_mes2017$cantidad_muertes)
+```
+
+
+```{r}
+library(dplyr)
+
+muertes_por_mes_y_causa2017 <- sub_base2017 %>%
+  group_by(mesdef, des_causa) %>%
+  summarise(cantidad = n()) %>%
+  arrange(mesdef, desc(cantidad))
+
+muertes_por_mes_y_causa2017
+
+```
+
+####2018###
+```{r}
+codigos_interes <- c(
+  "V29",  # Motociclista lesionado en otros accidentes de transporte, y en los no especificados
+  "X59",  # Exposición a factores no especificados
+  "V89",  # Accidente de vehículo de motor o sin motor, tipo de vehículo no especificado
+  "V09",  # Peatón lesionado en otros accidentes de transporte, y en los no especificados
+  "W69",  # Ahogamiento y sumersión mientras se está en aguas naturales
+  "V49",  # Ocupante de automóvil lesionado en otros accidentes de transporte, y en los no especificados
+  "W17",  # Otras caídas de un nivel a otro
+  "X45",  # Envenenamiento accidental por, y exposición al alcohol
+  "V19",  # Ciclista lesionado en otros accidentes de transporte, y en los no especificados
+  "W19",  # Caída no especificada
+  "W87",  # Exposición a corriente eléctrica no especificada
+  "X42",  # Envenenamiento accidental por, y exposición a narcóticos y psicodislépticos
+  "W74",  # Ahogamiento y sumersión no especificados
+  "V95",  # Accidente de aeronave de motor, con ocupante lesionado
+  "W84",  # Obstrucción no especificada de la respiración
+  "X00",  # Exposición a fuego no controlado en edificio u otra construcción
+  "X09",  # Exposición a humos, fuegos o llamas no especificados
+  "W49",  # Exposición a otras fuerzas mecánicas inanimadas
+  "X33",  # Víctima de rayo
+  "X44",  # Envenenamiento accidental por otras drogas, medicamentos y sustancias biológicas
+  "V05",  # Peatón lesionado por colisión con tren o vehículo de rieles
+  "W67",  # Ahogamiento y sumersión mientras se está en una piscina
+  "W80",  # Inhalación e ingestión de otros objetos que causan obstrucción de las vías respiratorias
+  "X49",  # Envenenamiento accidental por otros productos químicos y sustancias nocivas
+  "V48",  # Ocupante de automóvil lesionado en accidente de transporte sin colisión
+  "V80",  # Jinete u ocupante de vehículo de tracción animal lesionado
+  "W20",  # Golpe por objeto arrojado, proyectado o que cae
+  "W55",  # Mordedura o ataque de otros mamíferos
+  "W79",  # Inhalación e ingestión de alimento que causa obstrucción de las vías respiratorias
+  "X41"   # Envenenamiento accidental por fármacos sedantes y psicotrópicos
+)
+```
+
+```{r}
+library(haven)
+DEFU2018PAD <- read_sav("Desktop/Practica I/CIOdD/DATOS/DATOS INEC/DEFU2018PAD.sav")
+```
+
+```{r}
+library(dplyr)
+
+# Supongamos que tienes ya la tabla de los códigos de 4 caracteres como variable
+tabla2018<- table(substr(DEFU2018PAD$causamuer, 1, 4))
+
+# Extraemos nombres (los códigos de 4 caracteres)
+codigos_2018 <- names(tabla2018)
+
+# Seleccionar solo los códigos de 4 caracteres que comienzan con uno de los prefijos
+codigos_2018_filtrados <- codigos_2018[
+  sapply(codigos_2018, function(x) any(startsWith(x, codigos_interes)))
+]
+
+# Mostrar los códigos y sus frecuencias
+tabla_filtrada2018 <- tabla2017[codigos_2018_filtrados]
+tabla_filtrada2018
+```
+
+```{r}
+codigos_exactos2018 <- codigos_2018_filtrados
+```
+
+```{r}
+filtrado2018 <- DEFU2018PAD[substr(DEFU2018PAD$causamuer, 1, 4) %in% codigos_exactos2018, c(1,4,8,11,12,19,23)]
+nrow(filtrado2018)
+#1443
+```
+
+*Contador*
+```{r}
+library(dplyr)
+tabla_frecuencias2018 <- table(filtrado2018$causamuer)
+print(tabla_frecuencias2018)
+```
+
+```{r}
+str(filtrado2018)
+```
+
+```{r}
+library(dplyr)
+resumen_por_mes2018 <- filtrado2018 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+
+print(resumen_por_mes2018)
+```
+
+**ACA**
+```{r}
+# Ordena la base de forma descendente por la variable 'causamuer'
+DEFU2018PAD_ordenada <- DEFU2018PAD[order(DEFU2018PAD$causamuer, decreasing = TRUE), ]
+sub_base2018<- DEFU2018PAD_ordenada[1926:2766, ]
+```
+
+```{r}
+#Tabla frecuencias
+table(sub_base2018$causamuer)
+```
+
+```{r}
+table(sub_base2018$des_causa)
+```
+
+```{r}
+library(dplyr)
+resumen_por_mes2018 <- sub_base2018 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+resumen_por_mes2018
+sum(resumen_por_mes2018$cantidad_muertes)
+```
+
+
+```{r}
+library(dplyr)
+
+muertes_por_mes_y_causa2018<- sub_base2018 %>%
+  group_by(mesdef, des_causa) %>%
+  summarise(cantidad = n()) %>%
+  arrange(mesdef, desc(cantidad))
+
+muertes_por_mes_y_causa2018
+
+```
+
+
+
+
+####2019###
+```{r}
+library(haven)
+DEFU2019PAD <- read_sav("Desktop/Practica I/CIOdD/DATOS/DATOS INEC/DEFU2019PAD.sav")
+```
+
+```{r}
+codigos_interes <- c(
+  "X59", # Exposición a factores no especificados
+  "V29", # Motociclista lesionado en otros accidentes de transporte
+  "V09", # Peatón lesionado en otros accidentes de transporte
+  "V89", # Accidente de vehículo de tipo no especificado
+  "V49", # Ocupante de automóvil lesionado en otros accidentes
+  "X45", # Envenenamiento accidental por alcohol
+  "W17", # Otras caídas de un nivel a otro
+  "V19", # Ciclista lesionado en otros accidentes de transporte
+  "W69", # Ahogamiento en aguas naturales
+  "W19", # Caída no especificada
+  "W74", # Ahogamiento no especificado
+  "X42", # Envenenamiento por narcóticos y psicodislépticos
+  "W87", # Exposición a corriente eléctrica no especificada
+  "W84", # Obstrucción no especificada de la respiración
+  "W73", # Otros ahogamientos y sumersiones especificados
+  "X09", # Exposición a humos, fuegos o llamas no especificados
+  "X20", # Contacto con serpientes y lagartos venenosos
+  "W55", # Mordedura o ataque de otros mamíferos
+  "W79", # Inhalación/ingestión de alimento con obstrucción respiratoria
+  "X00", # Exposición a fuego no controlado en edificios
+  "V79", # Ocupante de autobús lesionado en otros accidentes
+  "V80", # Jinete u ocupante de vehículo de tracción animal
+  "W20", # Golpe por objeto arrojado, proyectado o que cae
+  "W80", # Inhalación/ingestión de otros objetos con obstrucción respiratoria
+  "X33", # Víctima de rayo
+  "X48", # Envenenamiento por plaguicidas
+  "Resto de causas"
+)
+
+```
+
+
+```{r}
+library(dplyr)
+
+# Supongamos que tienes ya la tabla de los códigos de 4 caracteres como variable
+tabla2019<- table(substr(DEFU2019PAD$causamuer, 1, 4))
+
+# Extraemos nombres (los códigos de 4 caracteres)
+codigos_2019 <- names(tabla2019)
+
+# Seleccionar solo los códigos de 4 caracteres que comienzan con uno de los prefijos
+codigos_2019_filtrados <- codigos_2019[
+  sapply(codigos_2019, function(x) any(startsWith(x, codigos_interes)))
+]
+
+# Mostrar los códigos y sus frecuencias
+tabla_filtrada2019 <- tabla2017[codigos_2019_filtrados]
+tabla_filtrada2019
+```
+
+```{r}
+codigos_exactos2019 <- codigos_2019_filtrados
+```
+
+```{r}
+filtrado2019 <- DEFU2019PAD[substr(DEFU2019PAD$causamuer, 1, 4) %in% codigos_exactos2019, c(1,4,8,11,12,19,23)]
+nrow(filtrado2019)
+#1607+30
+```
+
+*Contador*
+```{r}
+library(dplyr)
+tabla_frecuencias2019 <- table(filtrado2019$causamuer)
+print(tabla_frecuencias2019)
+```
+
+```{r}
+str(filtrado2019)
+```
+
+Contar por categoria
+```{r}
+library(dplyr)
+
+tabla_frecuencias2019_df <- as.data.frame(tabla_frecuencias2019)
+colnames(tabla_frecuencias2019_df) <- c("codigo", "frecuencia")
+
+tabla_frecuencias2019_df$prefijo <- substr(tabla_frecuencias2019_df$codigo, 1, 3)
+
+library(dplyr)
+
+conteo_por_prefijo <- tabla_frecuencias2019_df %>%
+  group_by(prefijo) %>%
+  summarise(total = sum(frecuencia), .groups = "drop")
+
+prefijos_interes <- c(
+  "X59", "V29", "V09", "V89", "V49", "X45", "W17", "V19", "W69",
+  "W19", "W74", "X42", "W87", "W84", "W73", "X09", "X20", "W55",
+  "W79", "X00", "V79", "V80", "W20", "W80", "X33", "X48"
+)
+
+# Asegura que todos los prefijos estén presentes (aunque sea con 0)
+resultado_final <- data.frame(prefijo = prefijos_interes) %>%
+  left_join(conteo_por_prefijo, by = "prefijo") %>%
+  mutate(total = ifelse(is.na(total), 0, total))
+
+print(resultado_final)
+
+
+```
+
+
+```{r}
+library(dplyr)
+resumen_por_mes2019 <- filtrado2019 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+
+print(resumen_por_mes2019)
+```
+
+
+**ACA**
+```{r}
+# Ordena la base de forma descendente por la variable 'causamuer'
+DEFU2019PAD_ordenada <- DEFU2019PAD[order(DEFU2019PAD$causamuer, decreasing = TRUE), ]
+sub_base2019<- DEFU2019PAD_ordenada[1893:2705, ]
+```
+
+```{r}
+#Tabla frecuencias
+table(sub_base2019$causamuer)
+```
+
+```{r}
+table(sub_base2019$des_causa)
+```
+
+```{r}
+library(dplyr)
+resumen_por_mes2019 <- sub_base2019 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+resumen_por_mes2019
+sum(resumen_por_mes2019$cantidad_muertes)
+```
+
+
+```{r}
+library(dplyr)
+
+muertes_por_mes_y_causa2019<- sub_base2019 %>%
+  group_by(mesdef, des_causa) %>%
+  summarise(cantidad = n()) %>%
+  arrange(mesdef, desc(cantidad))
+
+muertes_por_mes_y_causa2019
+
+```
+
+
+
+####2020###
+```{r}
+library(haven)
+DEFU2020PAD <- read_sav("Desktop/Practica I/CIOdD/DATOS/DATOS INEC/DEFU2020PAD.sav")
+```
+
+**ACA**
+```{r}
+# Ordena la base de forma descendente por la variable 'causamuer'
+DEFU2020PAD_ordenada <- DEFU2020PAD[order(DEFU2020PAD$causamuer, decreasing = TRUE), ]
+sub_base2020<- DEFU2020PAD_ordenada[1926:2515, ]
+```
+
+```{r}
+#Tabla frecuencias
+table(sub_base2020$causamuer)
+```
+
+```{r}
+table(sub_base2020$des_causa)
+```
+
+```{r}
+library(dplyr)
+resumen_por_mes2020 <- sub_base2020 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+resumen_por_mes2020
+sum(resumen_por_mes2020$cantidad_muertes)
+```
+
+
+```{r}
+library(dplyr)
+
+muertes_por_mes_y_causa2020<- sub_base2020 %>%
+  group_by(mesdef, des_causa) %>%
+  summarise(cantidad = n()) %>%
+  arrange(mesdef, desc(cantidad))
+
+muertes_por_mes_y_causa2020
+
+```
+####2021###
+```{r}
+library(haven)
+DEFU2021PAD <- read_sav("Desktop/Practica I/CIOdD/DATOS/DATOS INEC/DEFU2021PAD.sav")
+```
+
+**ACA**
+```{r}
+# Ordena la base de forma descendente por la variable 'causamuer'
+DEFU2021PAD_ordenada <- DEFU2021PAD[order(DEFU2021PAD$causamuer, decreasing = TRUE), ]
+sub_base2021<- DEFU2021PAD_ordenada[2021:2750, ]
+```
+
+```{r}
+#Tabla frecuencias
+table(sub_base2021$causamuer)
+```
+
+```{r}
+table(sub_base2021$des_causa)
+```
+
+```{r}
+library(dplyr)
+resumen_por_mes2021 <- sub_base2021 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+resumen_por_mes2021
+sum(resumen_por_mes2021$cantidad_muertes)
+```
+
+
+```{r}
+library(dplyr)
+
+muertes_por_mes_y_causa2021<- sub_base2021 %>%
+  group_by(mesdef, des_causa) %>%
+  summarise(cantidad = n()) %>%
+  arrange(mesdef, desc(cantidad))
+
+muertes_por_mes_y_causa2021
+
+```
+####2022###
+```{r}
+library(haven)
+DEFU2022 <- read_sav("Desktop/Practica I/CIOdD/DATOS/DATOS INEC/DEFU2022.sav")
+```
+
+```{r}
+# Ordena la base de forma descendente por la variable 'causamuer'
+DEFU2022_ordenada <- DEFU2022[order(DEFU2022$causamuer, decreasing = TRUE), ]
+sub_base2022<- DEFU2022_ordenada[2092:2959, ]
+```
+
+```{r}
+#Tabla frecuencias
+table(sub_base2022$causamuer)
+```
+
+```{r}
+table(sub_base2022$des_causa)
+```
+
+```{r}
+library(dplyr)
+resumen_por_mes2022 <- sub_base2022 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+resumen_por_mes2022
+sum(resumen_por_mes2022$cantidad_muertes)
+```
+
+
+```{r}
+library(dplyr)
+
+muertes_por_mes_y_causa2022<- sub_base2022 %>%
+  group_by(mesdef, des_causa) %>%
+  summarise(cantidad = n()) %>%
+  arrange(mesdef, desc(cantidad))
+
+muertes_por_mes_y_causa2022
+
+```
+####2023###
+
+```{r}
+library(haven)
+DEFU2023 <- read_sav("Desktop/Practica I/CIOdD/DATOS/DATOS INEC/DEFU2023.sav")
+str(DEFU2023)
+```
+
+```{r}
+table(substr(DEFU2023$causamuer, 1, 4))
+```
+
+```{r}
+library(dplyr)
+
+
+# Vector de códigos de interés (tus prefijos de 3 caracteres)
+codigos_interes <- c(
+  "X59", "V29", "V09", "V89", "W69", "W17", "V49", "W19", "X42", "V19",
+  "Y83", "X45", "W87", "V48", "V28", "W84", "Y86", "X09", "X44", "W20",
+  "X00", "W23", "W74", "X41", "X47", "X49", "W34", "W73", "W77", "X20",
+  "X23", "X48", "V05", "W58", "W67", "Y60"
+)
+
+# Supongamos que tienes ya la tabla de los códigos de 4 caracteres como variable
+tabla_4caracteres <- table(substr(DEFU2023$causamuer, 1, 4))
+
+# Extraemos nombres (los códigos de 4 caracteres)
+codigos_4 <- names(tabla_4caracteres)
+
+# Seleccionar solo los códigos de 4 caracteres que comienzan con uno de los prefijos
+codigos_4_filtrados <- codigos_4[
+  sapply(codigos_4, function(x) any(startsWith(x, codigos_interes)))
+]
+
+# Mostrar los códigos y sus frecuencias
+tabla_filtrada <- tabla_4caracteres[codigos_4_filtrados]
+tabla_filtrada
+```
+
+```{r}
+codigos_exactos <- codigos_4_filtrados
+```
+
+```{r}
+filtrado2023 <- DEFU2023[substr(DEFU2023$causamuer, 1, 4) %in% codigos_exactos, c(1,4,8,11,12,19,23)]
+nrow(filtrado2023)
+#1971+46( resto de causas)
+```
+
+*Contador*
+```{r}
+library(dplyr)
+tabla_frecuencias <- table(filtrado2023$causamuer)
+print(tabla_frecuencias)
+```
+
+```{r}
+str(filtrado2023)
+```
+
+```{r}
+library(dplyr)
+resumen_por_mes <- filtrado2023 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+
+print(resumen_por_mes)
+```
+
+**ACA**
+```{r}
+# Ordena la base de forma descendente por la variable 'causamuer'
+DEFU2023_ordenada <- DEFU2023[order(DEFU2023$causamuer, decreasing = TRUE), ]
+sub_base2023<- DEFU2023_ordenada[2368:3303, ]
+```
+
+```{r}
+#Tabla frecuencias
+table(sub_base2023$causamuer)
+```
+
+```{r}
+table(sub_base2023$des_causa)
+```
+
+```{r}
+library(dplyr)
+resumen_por_mes2023 <- sub_base2023 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+resumen_por_mes2023
+sum(resumen_por_mes2023$cantidad_muertes)
+```
+
+
+```{r}
+library(dplyr)
+
+muertes_por_mes_y_causa2023<- sub_base2023 %>%
+  group_by(mesdef, des_causa) %>%
+  summarise(cantidad = n()) %>%
+  arrange(mesdef, desc(cantidad))
+
+muertes_por_mes_y_causa2023
+
+```

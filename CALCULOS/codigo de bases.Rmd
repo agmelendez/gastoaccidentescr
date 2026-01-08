@@ -1,0 +1,120 @@
+---
+title: "Untitled"
+author: "Fernanda"
+date: "2025-07-22"
+output: html_document
+---
+
+```{r}
+library(readxl)
+Siniestralidad_SOA_2 <- read_excel("Desktop/Practica I/CIOdD/DATOS/SOA-SUGESE/Siniestralidad_SOA-2.xlsx")
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(stringr)
+```
+
+```{r}
+# Base SOA larga
+soa_larga <- Siniestralidad_SOA_2 %>%
+  # Seleccionamos solo las columnas necesarias (fallecidos y lesionados por tipo de vehículo)
+  pivot_longer(
+    cols = c(
+      `Particular Fallecido`, `Particular Lesionado`,
+      `Carga Liviana Fallecido`, `Carga Liviana Lesionado`,
+      `Carga Pesada Fallecido`, `Carga Pesada Lesionado`,
+      `Motos Fallecidos`, `Motos Lesionados`,
+      `Equipo Especial Fallecidos`, `Equipo Especial Lesionados`,
+      `Autobuses, busetas, microbuses transporte remunerado de personas Fallecidos`,
+      `Autobuses, busetas, microbuses transporte remunerado de personas Lesionados`
+    ),
+    names_to = "Variable",
+    values_to = "Cantidad"
+  ) %>%
+  mutate(
+    Tipo_vehiculo = Variable %>%
+      str_remove(" Fallecido") %>%
+      str_remove(" Lesionado") %>%
+      str_remove(" Fallecidos") %>%
+      str_remove(" Lesionados") %>%
+      str_trim(),
+
+    Tipo_lesion = case_when(
+      str_detect(Variable, "Fallecido") ~ "Fallecido",
+      str_detect(Variable, "Lesionado") ~ "Lesionado",
+      str_detect(Variable, "Fallecidos") ~ "Fallecido",
+      str_detect(Variable, "Lesionados") ~ "Lesionado",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  select(Año, Mes, Tipo_vehiculo, Tipo_lesion, Cantidad) %>%
+  arrange(Año, Mes, Tipo_vehiculo, Tipo_lesion)
+```
+
+```{r}
+str(soa_larga)
+```
+
+```{r}
+library(readr)
+cosevi <- read_delim("Desktop/Practica I/CIOdD/DATOS/COSEVI/2 Base de accidentes con victimas 2017_ 2023_UTF8.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+```
+```{r}
+str(cosevi)
+```
+
+```{r}
+cosevi$`Tipo de accidente`
+```
+
+*pegar a base*
+Paso 1: Homogeneizar el mes
+```{r}
+library(dplyr)
+library(stringr)
+
+cosevi <- cosevi %>%
+  mutate(
+    Mes = str_trim(str_extract(Mes, "(?<=\\.)\\s*\\w+"))  # Extrae solo "Octubre", "Enero", etc.
+  )
+```
+
+Paso 2: Crear la variable Tipo_lesion
+```{r}
+cosevi <- cosevi %>%
+  mutate(
+    Tipo_lesion = case_when(
+      str_detect(`Clase de accidente`, regex("muerto", ignore_case = TRUE)) ~ "Fallecido",
+      str_detect(`Clase de accidente`, regex("grave|leve|herido", ignore_case = TRUE)) ~ "Lesionado",
+      TRUE ~ NA_character_
+    )
+  )
+
+```
+
+```{r}
+library(dplyr)
+
+proporciones_soa <- soa_larga %>%
+  filter(Tipo_lesion %in% c("Fallecido", "Lesionado")) %>%
+  group_by(Año, Mes) %>%
+  summarise(
+    Fallecidos = sum(Cantidad[Tipo_lesion == "Fallecido"], na.rm = TRUE),
+    Lesionados = sum(Cantidad[Tipo_lesion == "Lesionado"], na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Total = Fallecidos + Lesionados,
+    prop_fallecido = Fallecidos / Total,
+    prop_lesionado = Lesionados / Total
+  )
+```
+
+```{r}
+cosevi_con_props <- cosevi %>%
+  left_join(proporciones_soa, by = c("Año", "Mes"))
+```
+

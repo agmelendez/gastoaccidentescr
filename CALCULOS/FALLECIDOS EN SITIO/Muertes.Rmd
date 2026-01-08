@@ -1,0 +1,182 @@
+---
+title: "MUERTES"
+author: "Fernanda"
+date: "2025-08-06"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+#Base COSEVI
+```{r}
+codigos_interes <- c(
+  "V05", "V09", "V19", "V29", "V49", "V80", "V89", "V95",
+  "W17", "W19", "W49", "W74", "W76", "W77", "W79", "W80", "W84", "W87",
+  "X00", "X09", "X20", "X23", "X29", "X33", "X42", "X45", "X49", "X59"
+)
+```
+
+```{r}
+base_cosevi <- read.csv("~/Desktop/Practica I/CIOdD/DATOS/COSEVI/base victimas.csv", encoding="UTF-8-MAC", sep=";")
+```
+
+```{r}
+str(base_cosevi)
+```
+
+```{r}
+library(dplyr)
+accidentes_por_año <- base_cosevi %>%
+  group_by(Año) %>%
+  summarise(total_accidentes = n()) %>%
+  arrange(Año)
+print(accidentes_por_año)
+sum(accidentes_por_año$total_accidentes)
+```
+
+
+#2017
+```{r}
+total_2017 <- accidentes_por_año %>%
+  filter(Año == 2017) %>%
+  summarise(total = sum(total_accidentes)) %>%
+  pull(total); total_2017
+```
+
+```{r}
+library(haven)
+DEFU2017PAD <- read_sav("~/Desktop/Practica I/CIOdD/DATOS/DATOS INEC/DEFU2017PAD.sav")
+```
+
+```{r}
+# Ordena la base de forma descendente por la variable 'causamuer'
+DEFU2017PAD_ordenada <- DEFU2017PAD[order(DEFU2017PAD$causamuer, decreasing = TRUE), ]
+sub_base2017<- DEFU2017PAD_ordenada[1902:2792, ]
+```
+
+
+```{r}
+library(dplyr)
+resumen_por_mes2017 <- sub_base2017 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+sum(resumen_por_mes2017$cantidad_muertes)
+```
+
+```{r}
+library(dplyr)
+library(stringr)  # para manipular texto fácilmente
+
+meses_es <- c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+              "Julio", "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre")
+
+accidentes_graves_o_muertos2017 <- base_cosevi %>%
+  filter(Año == 2017, trimws(Clase.de.accidente) == "Con muertos o graves") %>%
+  mutate(Mes_limpio = str_remove(Mes, "^[A-Z]\\.\\s*")) %>%  # elimina la letra + punto + espacio
+  mutate(Mes_num = match(Mes_limpio, meses_es)) %>%
+  group_by(Mes_num) %>%
+  summarise(total_accidentes = n(), .groups = "drop")
+
+# Ahora unimos con resumen_por_mes2017 renombrando mesdef a Mes_num
+muertes2017 <- resumen_por_mes2017 %>%
+  rename(Mes_num = mesdef)
+
+# Unir y calcular heridos graves estimados
+heridos_graves_estimados2017 <- accidentes_graves_o_muertos2017 %>%
+  left_join(muertes2017, by = "Mes_num") %>%
+  mutate(heridos_graves_est = total_accidentes - cantidad_muertes,
+         Mes = meses_es[Mes_num]) %>%
+  select(Mes, total_accidentes, cantidad_muertes, heridos_graves_est)
+
+```
+
+```{r}
+library(glue)
+library(scales)
+
+heridos_graves_total <- sum(heridos_graves_estimados2017$heridos_graves_est)
+muertes_estimadas_total <- sum(heridos_graves_estimados2017$cantidad_muertes)
+accidentes_con_muertes_o_graves_total <- sum(heridos_graves_estimados2017$total_accidentes)
+
+
+cat(glue("
+Resumen 2017:
+- Heridos graves estimados: {round(heridos_graves_total)}
+- Muertes estimadas: {round(muertes_estimadas_total)}
+- Total accidentes con muertes o graves: {round(accidentes_con_muertes_o_graves_total)}
+"))
+
+```
+
+*Escenarios*
+```{r}
+library(dplyr)
+library(stringr)
+
+base_cosevi_limpia_2017 <- base_cosevi %>%
+  filter(Año == 2017) %>%
+  mutate(Mes_limpio = str_remove(Mes, "^[A-Z]\\.\\s*"),
+         Mes_num = match(Mes_limpio, c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                                       "Julio", "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre")))
+
+heridos_leves_total_2017 <- base_cosevi_limpia_2017 %>%
+  filter(Clase.de.accidente == "Solo heridos leves") %>%
+  summarise(total_heridos_leves = n())
+
+heridos_leves_total_2017
+
+```
+
+
+```{r}
+library(glue)
+
+muertes_totales2017 <- 891  # Dato INEC total
+
+# Escenarios de muertes en sitio y hospital
+muertes_en_sitio2017 <- muertes_totales2017 * 0.4   # Escenario 1
+muertes_en_hospital2017 <- muertes_totales2017 * 0.6 # Escenario 2
+
+# Heridos graves estimados (total accidentes con muertos o graves - muertes totales)
+heridos_graves_estimados <- total_accidentes_anual - muertes_totales2017
+
+# Escenarios de discapacidad
+discapacidad_permanente <- heridos_graves_estimados * 0.3  # Escenario 3
+incapacidad_temporal <- heridos_graves_estimados * 0.7     # Escenario 4
+
+# Heridos leves (dato estimado)
+heridos_leves <- 12474
+
+cat(glue("
+Resumen 2017:
+- Muertes 2017: {round(muertes_totales2017)}
+- Muertes en sitio 2017 (40%): {round(muertes_en_sitio2017)}
+- Muertes en hospital 2017 (60%): {round(muertes_en_hospital2017)}
+- Total accidentes con muertes o graves 2017: {round(total_accidentes_anual)}
+- Heridos graves estimados 2017: {round(heridos_graves_estimados)}
+- Discapacidad permanente 2017(30% heridos graves): {round(discapacidad_permanente)}
+- Incapacidad temporal 2017 (70% heridos graves): {round(incapacidad_temporal)}
+- Heridos leves estimados 2017: {round(heridos_leves)}
+- Total accidentes 2017: {round(total_2017)}
+"))
+
+
+```
+
+#2018
+
+```{r}
+# Ordena la base de forma descendente por la variable 'causamuer'
+DEFU2018PAD_ordenada <- DEFU2018PAD[order(DEFU2018PAD$causamuer, decreasing = TRUE), ]
+sub_base2018<- DEFU2018PAD_ordenada[1926:2766, ]
+```
+
+```{r}
+library(dplyr)
+resumen_por_mes2018 <- sub_base2018 %>%
+  group_by(mesdef) %>%
+  summarise(cantidad_muertes = n()) %>%
+  arrange(mesdef)
+sum(resumen_por_mes2018$cantidad_muertes)
+```
+

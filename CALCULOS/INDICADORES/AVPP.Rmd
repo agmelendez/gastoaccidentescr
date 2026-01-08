@@ -1,0 +1,548 @@
+---
+title: "Untitled"
+author: "Fernanda"
+date: "2025-09-01"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+#AVPP
+```{r}
+library(readxl)
+muertes_pj <- read_excel("~/Desktop/PRACTICA /CIOdD/DATOS/PODER JUDICIAL/Muertes PJ por edad.xlsx")
+```
+
+```{r}
+base=muertes_pj
+str(base)
+```
+
+```{r}
+library(dplyr)
+# Fallecidos totales por año
+año <- base %>%
+  group_by(Año) %>%
+  summarise(Fallecidos_totales = sum(Fallecidos, na.rm = TRUE))
+
+```
+
+```{r}
+# Fallecidos totales por grupo de edad
+edad <- base %>%
+  group_by(Edad) %>%
+  summarise(Fallecidos_totales = sum(Fallecidos, na.rm = TRUE))
+edad
+```
+
+```{r}
+# Fallecidos por año y edad (tabla cruzada)
+año_edad <- base %>%
+  group_by(Año, Edad) %>%
+  summarise(Fallecidos_totales = sum(Fallecidos, na.rm = TRUE)) %>%
+  arrange(Año, Edad)
+año_edad 
+```
+
+```{r}
+library(readr)
+personas <- read_delim("~/Desktop/PRACTICA /CIOdD/DATOS/COSEVI/personas 2024.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r}
+str(personas)
+```
+
+```{r}
+
+library(dplyr)
+muertes_cosevi <- personas %>% 
+  filter(`Tipo de lesión` == "Muerte")
+
+```
+
+```{r}
+# Crea la tabla de muertes por edad quinquenal
+muertes_por_edad_quinquenal <- muertes_cosevi %>% 
+  group_by(`Edad quinquenal`) %>% 
+  summarise(
+    Total_Muertes = n()
+  ) %>% 
+  arrange(`Edad quinquenal`)
+
+```
+
+```{r}
+muertes_por_edad_quinquenalaño <- muertes_cosevi %>% 
+  group_by(Año, `Edad quinquenal`) %>% 
+  summarise(
+    Total_Muertes = n(),
+    .groups = "drop"
+  ) %>% 
+  arrange(Año, `Edad quinquenal`)
+
+```
+
+```{r}
+muertes_por_año <- muertes_cosevi %>%
+  group_by(Año) %>%
+  summarise(
+    Total_Muertes = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(Año)
+
+```
+
+*Cantidad de accidentes con victimas según COSEVI*
+```{r}
+vctimas_por_año <- personas %>%
+  group_by(Año) %>%
+  summarise(
+    Total_Casos = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(Año)
+
+```
+
+```{r}
+lesionados_por_año <- personas %>%
+  filter(`Tipo de lesión` %in% c("Herido leve", "Herido grave", "Muerte")) %>%
+  group_by(Año) %>%
+  summarise(
+    Total_Lesionados = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(Año)
+
+```
+
+
+```{r}
+base_victimas <- read_delim("~/Desktop/PRACTICA /CIOdD/DATOS/COSEVI/base victimas.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+str(base_victimas)
+```
+
+
+```{r}
+accidentes_victimas_por_año <- base_victimas %>%
+  group_by(Año) %>%
+  summarise(
+    Total_Accidentes = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(Año)
+
+```
+`
+
+##Calculo AVPP
+```{r}
+library(readxl)
+Esperanza_de_vida <- read_excel("~/Desktop/PRACTICA /CIOdD/DATOS/BASES CREADAS/Esperanza de vida.xlsx")
+esperanza= Esperanza_de_vida
+str(esperanza)
+```
+
+
+```{r}
+personas_fallecidas <- personas %>%
+  filter(`Tipo de lesión` == "Muerte")
+```
+
+```{r}
+personas_fallecidas <- personas_fallecidas %>%
+  mutate(Edad = as.numeric(Edad))
+```
+
+```{r}
+personas_fallecidas <- personas_fallecidas %>%
+  left_join(esperanza, by = "Año")
+
+```
+
+```{r}
+#Aca lo que se hizo fue calcular los AVPP (juntando la tabla esperanza)
+library(dplyr)
+avpp_cosevi <- personas_fallecidas %>%
+  mutate(AVPP = pmax(Total - Edad, 0)) %>%  # pmax para evitar negativos
+  group_by(Año) %>%
+  summarise(AVPP_total = sum(AVPP, na.rm = TRUE),
+            Fallecidos = n(),
+            Media_AVPP = AVPP_total / Fallecidos)
+avpp_cosevi
+```
+
+
+```{r}
+#Calculo AVPP individual
+#personas_fallecidas <- personas %>%
+ # filter(`Tipo de lesión` == "Fallecido") %>%
+  #mutate(dad = as.numeric(Edad)) %>%  # pasar edad a número
+  #left_join(esperanza, by = "Año") %>%
+  #mutate(AVPP = pmax(esperanza - Edad, 0))
+```
+
+```{r}
+library(dplyr)
+
+# Paso 1: diccionario de edades promedio por grupo
+grupos_edades <- c(
+  "Menos de 5 años" = 2.5,
+  "De 5 a 9 años" = 7,
+  "De 10 a 14 años" = 12,
+  "De 15 a 17 años" = 16,
+  "De 18 a 19 años" = 18.5,
+  "De 20 a 24 años" = 22,
+  "De 25 a 29 años" = 27,
+  "De 30 a 34 años" = 32,
+  "De 35 a 39 años" = 37,
+  "De 40 a 44 años" = 42,
+  "De 45 a 49 años" = 47,
+  "De 50 a 54 años" = 52,
+  "De 55 a 59 años" = 57,
+  "De 60 a 64 años" = 62,
+  "65 y más" = 70
+)
+
+# Paso 2: agregar columna de edad promedio
+base_proc <- base %>%
+  mutate(Edad_media = grupos_edades[Edad])
+
+# Paso 3: si tienes esperanza de vida por sexo y año (ej. columnas Hombres, Mujeres, Total)
+esperanza_long <- Esperanza_de_vida %>%
+  tidyr::pivot_longer(cols = c(Total, Hombres, Mujeres),
+                      names_to = "Sexo",
+                      values_to = "Esperanza_vida")
+
+# Si la base del Poder Judicial no tiene sexo, usamos "Total":
+base_proc <- base_proc %>%
+  mutate(Sexo = "Total")
+
+# Paso 4: unir con esperanza de vida
+base_join <- base_proc %>%
+  left_join(esperanza_long, by = c("Año", "Sexo"))
+
+# Paso 5: calcular AVPP
+base_join <- base_join %>%
+  mutate(AVPP = pmax(Esperanza_vida - Edad_media, 0) * Fallecidos)
+
+# Paso 6: resumir por año
+avpp_poder_judicial <- base_join %>%
+  group_by(Año) %>%
+  summarise(
+    AVPP_total = sum(AVPP, na.rm = TRUE),
+    Fallecidos = sum(Fallecidos, na.rm = TRUE),
+    Media_AVPP = AVPP_total / Fallecidos
+  )
+avpp_poder_judicial
+```
+
+
+```{r}
+library(readxl)
+poblacion <- read_excel("~/Desktop/Practica I/CIOdD/DATOS/Poblacion estimacion.xlsx")
+```
+
+
+#Aca Proyecciones 
+🔹 Justificación metodológica
+Disponibilidad de datos
+Solo tenemos AVPP hasta 2023.
+Para 2024–2025 aún no hay datos consolidados (ni de Poder Judicial ni de COSEVI).
+Enfoque oficial
+El documento usa extrapolaciones históricas para años sin datos
+.
+Eso significa que lo que hagamos con modelos sencillos (regresión lineal, ARIMA, suavizamiento exponencial) está en línea con la práctica institucional.
+Qué modelo elegir
+Como son pocos años (7 puntos: 2017–2023), ARIMA o suavizamiento exponencial puede ser demasiado complejo.
+Una regresión lineal simple sobre el tiempo es suficiente y transparente
+*Proyecciones de muertes*
+```{r}
+library(forecast)
+
+
+años <- 2017:2023
+fallecidos <- c(885, 829, 792, 581, 730, 854, 932)
+serie_muertes <- ts(fallecidos, start = 2017, frequency = 1)
+#Aplico suavizamiento exponencial para captar mejor la serie, autoarima no funciono, cae por la caida del 2020
+modelo_ets <- ets(serie_muertes)
+pred_ets <- forecast(modelo_ets, h=2) #h = 2 porque quiero predecir 2 años después del último dato
+ 
+# Peq tendencia lineal basada en los últimos 3 años
+ultimos <- tail(fallecidos, 3)  # 2021,2022,2023
+tendencia_anual <- (ultimos[3] - ultimos[1])/2  # diferencia anual promedio
+
+# Aplicar tendencia sobre predicción ETS
+muertes_tendencia <- muertes_base <- as.numeric(pred_ets$mean)
+muertes_tendencia[1] <- muertes_base[1] + tendencia_anual  # 2024
+muertes_tendencia[2] <- muertes_tendencia[1] + tendencia_anual  # 2025
+
+# Intervalos de confianza 
+LI <- pmax(0, muertes_tendencia - (muertes_base - as.numeric(pred_ets$lower[,2]))) #pmax(0, ...) asegura que el límite inferior nunca sea negativo, porque no puede haber muertes negativas.
+LS <- muertes_tendencia + (as.numeric(pred_ets$upper[,2]) - muertes_base)
+
+# Tabla final
+proyecciones_muertes <- data.frame(
+  Año = 2024:2025,
+  Muertes_total = round(muertes_tendencia,0),
+  LI = round(LI,0),
+  LS = round(LS,0)
+)
+
+proyecciones_muertes
+
+
+```
+
+*Proyecciones AVPP Lineal y con ARIMA*
+```{r}
+library(dplyr)
+library(ggplot2)
+library(forecast)
+avpp_poder_judicial <- data.frame(
+  Año = 2017:2023,
+  AVPP_total = c(35185, 32709, 31269, 22211, 27862, 32571, 36719),
+  Fallecidos = c(885, 829, 792, 581, 730, 854, 932),
+  Media_AVPP = c(39.8, 39.5, 39.5, 38.2, 38.2, 38.1, 39.4)
+)
+
+# Proy Lineal
+modelo_lin <- lm(AVPP_total ~ Año, data = avpp_poder_judicial)
+
+pred_lin <- predict(modelo_lin,
+                    newdata = data.frame(Año = 2024:2025),
+                    interval = "prediction")
+
+proyecciones_lin <- data.frame(
+  Año = 2024:2025,
+  AVPP_total = pred_lin[, "fit"],
+  LI = pred_lin[, "lwr"],
+  LS = pred_lin[, "upr"]
+)
+
+# ARIMA
+serie <- ts(avpp_poder_judicial$AVPP_total, start = 2017, frequency = 1)
+modelo_arima <- auto.arima(serie)
+pred_arima <- forecast(modelo_arima, h = 2)
+
+proyecciones_arima <- data.frame(
+  Año = 2024:2025,
+  AVPP_total = as.numeric(pred_arima$mean),
+  LI = as.numeric(pred_arima$lower[,2]),
+  LS = as.numeric(pred_arima$upper[,2])
+)
+proyecciones_arima 
+```
+
+*Proyecciones AVPP con ETS*
+```{r}
+library(forecast)
+
+# --- Datos históricos ---
+años <- 2017:2023
+avpp_total <- c(35185, 32709, 31269, 22211, 27862, 32571, 36719)
+serie_avpp <- ts(avpp_total, start = 2017, frequency = 1)
+
+# --- Modelo ETS para capturar nivel y variabilidad ---
+modelo_ets <- ets(serie_avpp)
+pred_ets <- forecast(modelo_ets, h=2)
+
+# Agregar pequeña tendencia lineal basada en los últimos 3 años
+ultimos <- tail(avpp_total, 3)  # 2021,2022,2023
+tendencia_anual <- (ultimos[3] - ultimos[1])/2  # diferencia anual promedio
+
+# Aplicar tendencia sobre predicción ETS
+avpp_tendencia <- muertes_base <- as.numeric(pred_ets$mean)
+avpp_tendencia[1] <- muertes_base[1] + tendencia_anual  # 2024
+avpp_tendencia[2] <- avpp_tendencia[1] + tendencia_anual  # 2025
+
+# Intervalos de confianza conservadores
+LI <- pmax(0, avpp_tendencia - (muertes_base - as.numeric(pred_ets$lower[,2])))
+LS <- avpp_tendencia + (as.numeric(pred_ets$upper[,2]) - muertes_base)
+
+# --- Tabla final ---
+proyecciones_avpp <- data.frame(
+  Año = 2024:2025,
+  AVPP_total = round(avpp_tendencia,0),
+  LI = round(LI,0),
+  LS = round(LS,0)
+)
+
+proyecciones_avpp
+
+#Aca con la media
+
+proyecciones$Media_AVPP <- proyecciones$AVPP_total / proyecciones$Fallecidos
+
+proyecciones$Media_AVPP
+
+```
+
+
+```{r}
+#Grafico comparando
+library(dplyr)
+library(ggplot2)
+library(forecast)
+
+avpp_poder_judicial <- data.frame(
+  Año = 2017:2023,
+  AVPP_total = c(35185, 32709, 31269, 22211, 27862, 32571, 36719)
+)
+
+#Lineal
+modelo_lin <- lm(AVPP_total ~ Año, data = avpp_poder_judicial)
+
+pred_lin <- predict(modelo_lin,
+                    newdata = data.frame(Año = 2024:2025),
+                    interval = "prediction")
+
+proyecciones_lin <- data.frame(
+  Año = 2024:2025,
+  AVPP_total = pred_lin[, "fit"],
+  LI = pred_lin[, "lwr"],
+  LS = pred_lin[, "upr"]
+)
+
+# Aca junto observados y proyectados 
+df_plot <- avpp_poder_judicial %>%
+  mutate(Tipo = "Observado") %>%
+  bind_rows(proyecciones_lin %>%
+              mutate(Tipo = "Proyectado"))
+
+ggplot(df_plot, aes(x = Año, y = AVPP_total, color = Tipo)) +
+  geom_line() +
+  geom_point(size = 2) +
+  geom_ribbon(data = proyecciones_lin,
+              aes(x = Año, ymin = LI, ymax = LS),
+              fill = "red", alpha = 0.2, inherit.aes = FALSE) +
+  labs(title = "Proyección de AVPP (2017–2025)",
+       y = "AVPP Total",
+       x = "Año") +
+  scale_color_manual(values = c("Observado" = "blue", "Proyectado" = "red")) +
+  theme_minimal()
+
+```
+
+#Justificación de porque se usaron series temporales 
+*Elección del modelo ETS:* El suavizamiento exponencial es adecuado para series temporales cortas y con fluctuaciones, ya que ajusta de manera flexible la serie histórica, capturando tendencias y cambios graduales sin depender de patrones estacionales complejos. En este caso, un modelo ARIMA no funcionó debido a la caída abrupta en 2020, que habría afectado la estabilidad de la predicción.
+*Ajuste de tendencia basado en los últimos años:* Para reflejar la evolución reciente de los fallecimientos, se calculó la diferencia promedio anual de los últimos tres años (2021–2023) y se aplicó como corrección a las predicciones ETS. Esto permite que la proyección considere tanto la información histórica global como la tendencia más reciente, mejorando la precisión de los valores estimados para 2024 y 2025.
+*Cálculo de intervalos de confianza:* Se mantuvieron límites inferiores no negativos y se ajustaron los límites superiores en función de la incertidumbre del modelo ETS, asegurando que las proyecciones sean realistas y útiles para la planificación.
+Relevancia práctica: La combinación de ETS con ajuste de tendencia proporciona estimaciones robustas y basadas en evidencia para los años futuros, permitiendo calcular los indicadores AVPP y AVAD en ausencia de datos observados, lo cual es esencial para análisis de política pública y planificación de medidas de prevención de accidentes.
+```{r}
+library(tibble)
+
+# Crear base de años (ejemplo 2016-2025)
+años <- 2016:2025
+
+# Crear tibble con todos los años y esperanza = 65
+esperanza_65 <- tibble(
+  Año = años,
+  Total = rep(65, length(años)),      # Esperanza total = 65 años
+  Hombres = rep(65, length(años)),    # Esperanza hombres = 65 años
+  Mujeres = rep(65, length(años))     # Esperanza mujeres = 65 años
+)
+
+```
+
+```{r}
+library(dplyr)
+
+# Paso 1: diccionario de edades promedio por grupo
+grupos_edades <- c(
+  "Menos de 5 años" = 2.5,
+  "De 5 a 9 años" = 7,
+  "De 10 a 14 años" = 12,
+  "De 15 a 17 años" = 16,
+  "De 18 a 19 años" = 18.5,
+  "De 20 a 24 años" = 22,
+  "De 25 a 29 años" = 27,
+  "De 30 a 34 años" = 32,
+  "De 35 a 39 años" = 37,
+  "De 40 a 44 años" = 42,
+  "De 45 a 49 años" = 47,
+  "De 50 a 54 años" = 52,
+  "De 55 a 59 años" = 57,
+  "De 60 a 64 años" = 62,
+  "65 y más" = 70
+)
+
+# Paso 2: agregar columna de edad promedio
+base_proc <- base %>%
+  mutate(Edad_media = grupos_edades[Edad])
+
+# Paso 3: si tienes esperanza de vida por sexo y año (ej. columnas Hombres, Mujeres, Total)
+esperanza_long <- esperanza_65 %>%
+  tidyr::pivot_longer(cols = c(Total, Hombres, Mujeres),
+                      names_to = "Sexo",
+                      values_to = "Esperanza_vida")
+
+# Si la base del Poder Judicial no tiene sexo, usamos "Total":
+base_proc <- base_proc %>%
+  mutate(Sexo = "Total")
+
+# Paso 4: unir con esperanza de vida
+base_join <- base_proc %>%
+  left_join(esperanza_long, by = c("Año", "Sexo"))
+
+# Paso 5: calcular AVPP
+base_join <- base_join %>%
+  mutate(AVPP = pmax(Esperanza_vida - Edad_media, 0) * Fallecidos)
+
+# Paso 6: resumir por año
+avpp_edadproductiva <- base_join %>%
+  group_by(Año) %>%
+  summarise(
+    AVPP_total = sum(AVPP, na.rm = TRUE),
+    Fallecidos = sum(Fallecidos, na.rm = TRUE),
+    Media_AVPP = AVPP_total / Fallecidos
+  )
+avpp_edadproductiva
+```
+
+```{r}
+#Para 65
+library(forecast)
+
+# --- Datos históricos ---
+años <- 2017:2023
+avpp_total <- c(35185, 32709, 31269, 22211, 27862, 32571, 36719)
+serie_avpp <- ts(avpp_total, start = 2017, frequency = 1)
+
+# --- Modelo ETS para capturar nivel y variabilidad ---
+modelo_ets <- ets(serie_avpp)
+pred_ets <- forecast(modelo_ets, h=2)
+
+# Agregar pequeña tendencia lineal basada en los últimos 3 años
+ultimos <- tail(avpp_total, 3)  # 2021,2022,2023
+tendencia_anual <- (ultimos[3] - ultimos[1])/2  # diferencia anual promedio
+
+# Aplicar tendencia sobre predicción ETS
+avpp_tendencia <- muertes_base <- as.numeric(pred_ets$mean)
+avpp_tendencia[1] <- muertes_base[1] + tendencia_anual  # 2024
+avpp_tendencia[2] <- avpp_tendencia[1] + tendencia_anual  # 2025
+
+# Intervalos de confianza conservadores
+LI <- pmax(0, avpp_tendencia - (muertes_base - as.numeric(pred_ets$lower[,2])))
+LS <- avpp_tendencia + (as.numeric(pred_ets$upper[,2]) - muertes_base)
+
+# --- Tabla final ---
+proyecciones_avpp <- data.frame(
+  Año = 2024:2025,
+  AVPP_total = round(avpp_tendencia,0),
+  LI = round(LI,0),
+  LS = round(LS,0)
+)
+
+proyecciones_avpp
+
+#Aca con la media
+
+proyecciones$Media_AVPP <- proyecciones$AVPP_total / proyecciones$Fallecidos
+
+proyecciones$Media_AVPP
+```
+

@@ -1,0 +1,1033 @@
+---
+title: "Costos base"
+author: "Fernanda"
+date: "2025-10-10"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+```{r}
+library(readr)
+library(readxl)
+fallecidos_oij <-  read_excel("~/Desktop/PRACTICA /CIOdD/DATOS/PODER JUDICIAL/Muertes PJ por edad.xlsx")
+victimas<- read_delim("~/Desktop/PRACTICA /CIOdD/DATOS/COSEVI/personas 2024.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+tarifario  <- read_excel("~/Desktop/PRACTICA /CIOdD/DATOS/BASES CREADAS/Costos Hospitalarios.xlsx")
+ambulancias<- read_excel("~/Desktop/PRACTICA /CIOdD/DATOS/BASES CREADAS/COSTOS AMBULANCIAS.xlsx")
+```
+
+```{r}
+library(dplyr)
+library(stringr)
+library(tidyr)
+```
+
+```{r}
+library(dplyr)
+victimas <- victimas %>%
+  mutate(
+    Tipo_lesion = str_to_lower(str_trim(`Tipo de lesión`)),
+    Vehiculo = str_to_lower(str_trim(
+victimas$`Vehiculo en  el que viajaba`)),
+    Sexo = str_to_lower(Sexo),
+    Rol = str_to_lower(Rol)
+  )
+
+```
+
+⚰️ 3. Calcular fallecidos en hospital
+
+```{r}
+library(dplyr)
+
+fallecidos_oij_anio <- fallecidos_oij %>%
+  group_by(Año) %>%
+  summarise(Fallecidos_OIJ = sum(Fallecidos, na.rm = TRUE))
+fallecidos_victimas_anio <- victimas %>%
+  filter(`Tipo de lesión`== "Muerte") %>%
+  group_by(Año) %>%
+  summarise(Fallecidos_sitio = n())
+comparacion <- fallecidos_oij_anio %>%
+  left_join(fallecidos_victimas_anio, by = "Año")
+comparacion <- comparacion %>%
+  mutate(Fallecidos_Hospital = Fallecidos_OIJ - Fallecidos_sitio)
+comparacion
+```
+🏥 4. Clasificación de los casos en la base de víctimas
+```{r}
+victimas <- victimas %>%
+  mutate(
+    Caso = case_when(
+      Tipo_lesion == "muerto" ~ "Fallecido en sitio",
+      Tipo_lesion %in% c("herido grave", "herido leve") ~ "Herido",
+      Tipo_lesion == "ileso" ~ "Ileso",
+      TRUE ~ "Otro"
+    )
+  )
+
+```
+
+💵 5. Asignar costos según tarifario y tipo de lesión
+Insumos según lesión
+```{r}
+tarifario$`Descripción del insumo`
+```
+
+#Lista insumos
+```{r}
+# Crear lista de insumos por tipo de lesión
+insumos_lesion <- list(
+  ileso = c( # Agrega aquí los insumos que correspondan solo a "ileso"
+    "Área Funcional de  Emergencias Triage",
+    "Área Funcional de  Emergencias Consultorios",
+    "Traslado Ambulancia"
+  ),
+  
+  "herido leve" = c( # Agrega aquí todos los insumos solo de "herido leve"
+    "Área Funcional de Emergencias Consultorios", "Área Funcional de Emergencias Inhalo terapia", "Área Funcional de Emergencias Observación", "Traslado Ambulancia", "Área Funcional de Emergencias Observación Tiempo de Espera",
+    "Consulta Especializada Primera Vez","Curaciones hasta 15 minutos", "Curaciones hasta 30 minutos", "Consulta no Médica", 
+"Consulta Especializada Primera Vez", 
+"Costo promedio de Interconsulta", "Costo Consulta Medicina General Primera vez", "Intravenosas", "Intramusculares", 
+"Via Intradérmicas-subcutánea","Cirugia menor Pequeña", "Cuerpo extraño intraocular", "Injertos","Antebrazo y Mano", "Bota Alta", "Bota Corta", "Brazo y Antebrazo", 
+"Cincho Pélvico", "Corset", "Cuello de Tomas de yeso", "Férula de Madera o Metal para Dedos", 
+"Férula en Aducción Miembro Superior", "Férula en Esgrima y Aducción", "Férula en U", 
+"Férula Inferior", "Férula Superior", "Guantina", "Milton Alto", "Milton Colgante", 
+"Milton Corto", "Toracobraquial", "Tubo de Yeso", "Yesotomía", "Argollas", "De Antebrazo y Mano", "De Bola", "De Carpo y Mano", 
+"De miembro Inferior Elástico", "De Tobillo o Rodilla Elástico", "Puño Cuello", 
+"Toráxico Elástico", "Vellpeau Elástico", "Vellpeau (Vendaje)","Rayos X de AP y lateral de columna cervical",
+"Rayos X de oblicuas derecha e izquierda de columna cervical",
+"Rayos X de flexión-extensión de columna cervical",
+"Rayos X de trans-oral de columna cervical",
+"Rayos X de AP y lateral de columna dorsal",
+"Rayos X de AP y lateral de columna lumbosacra",
+"Rayos X de oblicuas derecha e izquierda de columna lumbosacra",
+"Rayos X de flexión-extensión de columna lumbosacra",
+"Rayos X de columna dorso-lumbar de columna lumbosacra",
+"Rayos X de AP y lateral de columna sacro-coccígea",
+"Rayos X de tórax, pelvis y abdomen (cada una)",
+"Rayos X de AP y lateral",
+"Rayos X de senos paranasales (SPN)",
+"Rayos X de mandíbula (maxilar inferior)",
+"Rayos X de articulación témporo-mandibular",
+"Rayos X de agujeros ópticos",
+"Rayos X de perfilograma",
+"Rayos X de proyección de Waters",
+"Rayos X de proyección de Towne",
+"Rayos X de senos paranasales (incluye: Waters, Hirtz-lat, proyección de Caldwell)",
+"Rayos X de arco cigomático",
+"Maxilar Superior e Inferior",
+"Doppler abdominal",
+"Doppler arterial",
+"Doppler carótidas",
+"Doppler renal"
+
+  ),
+  
+  "herido grave" = c(# Agrega aquí los insumos solo de "herido grave"
+    "Área Funcional de Emergencias Triage", "Área Funcional de Emergencias Reanimación", "Área Funcional de Emergencias Suturas y Cirugía Menor", "Traslado Ambulancia",
+"Cirugia menor Pequeña", "Cirugia menor Mediana", "Cirugia menor Grande", "Cirugia menor Otras", 
+"Unidad de Cuidados Intensivos", "Injertos", "Zetaplastia", 
+"Desprendimiento de retina", "Luxación de cadera", "Coartación de aorta", 
+"Comunicación interauricular", "Comunicación interventricular", "Ligadura de ductus arterioso", 
+"Transposición de grandes vasos", "Uso de quirófano y personal (una hora)", 
+"Uso de quirófano y personal (por minuto)", 
+"Uso solo de instalaciones y equipo básico de quirófano (una hora)", 
+"Cuerpo extraño intraocular", "Colocación pin placa de Richards", "Laminectomía lumbar", 
+"Revisión reemplazo de caderas", "Sutura tendón mano", "Bota Alta", "Bota Corta", "Brazo y Antebrazo", 
+"Cincho Pélvico", "Corset", "Cuello de Tomas de yeso", "Férula de Madera o Metal para Dedos", 
+"Férula en Aducción Miembro Superior", "Férula en Esgrima y Aducción", "Férula en U", 
+"Férula Inferior", "Férula Superior", "Guantina", "Milton Alto", "Milton Colgante", 
+"Milton Corto", "Toracobraquial", "Tubo de Yeso", "Yesotomía","De Rodilla Semiduro", "De Tobillo Semiduro", "Toráxico Semiduro", "Watson Jones",
+"Tomografía convencional columna",
+"Tomografía convencional cráneo",
+"Tomografía convencional tórax, abdomen, pelvis",
+"Tomografía helicoidal columna",
+"Tomografía helicoidal cráneo",
+"Tomografía helicoidal tórax, abdomen, pelvis","Rayos X de AP y lateral de columna cervical",
+"Rayos X de oblicuas derecha e izquierda de columna cervical",
+"Rayos X de flexión-extensión de columna cervical",
+"Rayos X de trans-oral de columna cervical",
+"Rayos X de AP y lateral de columna dorsal",
+"Rayos X de AP y lateral de columna lumbosacra",
+"Rayos X de oblicuas derecha e izquierda de columna lumbosacra",
+"Rayos X de flexión-extensión de columna lumbosacra",
+"Rayos X de columna dorso-lumbar de columna lumbosacra",
+"Rayos X de AP y lateral de columna sacro-coccígea",
+"Rayos X de tórax, pelvis y abdomen (cada una)",
+"Rayos X de AP y lateral",
+"Rayos X de senos paranasales (SPN)",
+"Rayos X de mandíbula (maxilar inferior)",
+"Rayos X de articulación témporo-mandibular",
+"Rayos X de agujeros ópticos",
+"Rayos X de perfilograma",
+"Rayos X de proyección de Waters",
+"Rayos X de proyección de Towne",
+"Rayos X de senos paranasales (incluye: Waters, Hirtz-lat, proyección de Caldwell)",
+"Rayos X de arco cigomático",
+"Maxilar Superior e Inferior",
+"Doppler abdominal",
+"Doppler arterial",
+"Doppler carótidas",
+"Doppler renal"
+
+  ),
+  
+  muerte = c( # Agrega aquí todos los insumos solo de "muerte"
+    "Autopsia",
+    "Embalsamiento",
+    "Uso de instalaciones y equipo de morgue (Convenio C.C.S.S.-O.I.J)"
+   
+  )
+)
+
+```
+
+```{r}
+library(dplyr)
+
+costo_lesion <- lapply(names(insumos_lesion), function(lesion){
+  insumos <- insumos_lesion[[lesion]]
+  costo_total <- tarifario %>%
+    filter(`Descripción del insumo` %in% insumos) %>%
+    summarise(Costo_estimado = sum(`Costo unitario`, na.rm = TRUE)) %>%
+    pull(Costo_estimado)
+  
+  tibble(Tipo_lesion = lesion, Costo_estimado = costo_total)
+}) %>% bind_rows()
+
+```
+
+
+```{r}
+ambulancia_lesion <- tibble(
+  Tipo_lesion = c("ileso", "herido leve", "herido grave", "muerte"),
+  Tipo_ambulancia = c("Ambulancia Tipo C", "Ambulancia Tipo B", "Ambulancia Tipo A", "Ambulancia Tipo A")
+)
+
+```
+
+
+```{r}
+ambulancias$`Tipo de Ambulancia`
+```
+
+```{r}
+str(ambulancias)
+```
+
+```{r}
+victimas$`Tipo de lesión`
+```
+
+
+#Costos según tipo de lesión y ambulancia
+```{r}
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(scales)
+
+# === 1. Relación (1:n) entre tipo de lesión y tipos de ambulancia posibles ===
+tipo_amb_map <- tibble(
+  Tipo_lesion = c(
+    rep("ileso", 3),
+    rep("herido leve", 4),
+    rep("herido grave", 4),
+    rep("muerte", 3)
+  ),
+  `Tipo de Ambulancia` = c(
+    # ileso
+    "Ambulancia Tipo C", "Ambulancia Aérea", "Vehículo de Rescate",
+    # herido leve
+    "Ambulancia Tipo C", "Ambulancia Tipo B", "Ambulancia Aérea", "Vehículo de Rescate",
+    # herido grave
+    "Ambulancia Tipo A", "Ambulancia Tipo B", "Ambulancia Aérea", "Vehículo de Rescate",
+    # muerte
+    "Ambulancia Tipo A", "Ambulancia Aérea", "Vehículo de Rescate"
+  )
+)
+
+# === 2. Asegurar minúsculas en la variable de tipo de lesión (si existe) ===
+victimas <- victimas %>%
+  mutate(`Tipo de lesión` = tolower(`Tipo de lesión`))
+
+# === 3. Unir con tabla de ambulancias y calcular costos ===
+costo_lesion <- tipo_amb_map %>%
+  left_join(
+    ambulancias %>%
+      select(`Tipo de Ambulancia`, `Costo Aproximado (CRC)`),
+    by = "Tipo de Ambulancia"
+  ) %>%
+  rowwise() %>%
+  mutate(
+    Costo_insumos = sum(
+      tarifario %>%
+        filter(`Descripción del insumo` %in% insumos_lesion[[Tipo_lesion]]) %>%
+        pull(`Costo unitario`),
+      na.rm = TRUE
+    ),
+    Costo_total = `Costo Aproximado (CRC)` + Costo_insumos
+  ) %>%
+  ungroup() %>%
+  arrange(Tipo_lesion, desc(Costo_total)) %>%
+  mutate(
+    `Costo Aproximado (CRC)` = number(`Costo Aproximado (CRC)`, big.mark = ","),
+    Costo_insumos = number(Costo_insumos, big.mark = ","),
+    Costo_total = number(Costo_total, big.mark = ",")
+  )
+
+# === 4. Mostrar tabla final ===
+costo_lesion %>%
+  select(Tipo_lesion, `Tipo de Ambulancia`,
+         `Costo Aproximado (CRC)`, Costo_insumos, Costo_total)
+
+```
+
+
+```{r}
+library(dplyr)
+
+# Definir prioridad y porcentaje ponderado
+prioridad_ambulancia <- tibble(
+  `Tipo de Ambulancia` = c("Ambulancia Tipo C", "Ambulancia Tipo B", 
+                           "Ambulancia Tipo A", "Vehículo de Rescate", "Ambulancia Aérea"),
+  Porcentaje = c(50, 25, 15, 7, 3) # porcentaje aproximado según prioridad
+)
+
+# Unir con costo_lesion
+costo_lesion_prob <- costo_lesion %>%
+  left_join(prioridad_ambulancia, by = "Tipo de Ambulancia") %>%
+  select(Tipo_lesion, `Tipo de Ambulancia`, `Costo Aproximado (CRC)`, 
+         Costo_insumos, Costo_total, Porcentaje)
+
+# Ver resultados
+costo_lesion_prob
+
+
+```
+
+`
+
+
+#Base con casos (ignorar)
+```{r}
+table(victimas$`Tipo de lesión`)
+
+```
+
+```{r}
+library(dplyr)
+
+# 1. Casos 1, 2, 3 y 4: desde victimas
+victimas_casos <- victimas %>%
+  mutate(
+    Tipo_lesion = tolower(`Tipo de lesión`),
+    Caso = case_when(
+      Tipo_lesion == "muerte" ~ 1, # muere en sitio
+      Tipo_lesion == "herido grave" ~ 3,
+      Tipo_lesion == "herido leve" ~ 4,
+      Tipo_lesion == "ileso" ~ 5,
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  left_join(costo_lesion %>% select(Tipo_lesion, Costo_total), by = "Tipo_lesion") %>%
+  mutate(n_victimas = 1) %>%
+  select(Año, n_victimas, Tipo_lesion, Caso, Costo_total)
+
+# 2. Casos 2: muertes en hospital (totales por año)
+caso2_hospital <- comparacion %>%
+  filter(!is.na(Fallecidos_Hospital)) %>%
+  rowwise() %>%
+  mutate(
+    n_victimas = Fallecidos_Hospital,
+    Tipo_lesion = "muerte",
+    Caso = 2,
+    Costo_total = mean(costo_lesion %>% filter(Tipo_lesion=="muerte") %>% pull(Costo_total))
+  ) %>%
+  ungroup() %>%
+  select(Año, n_victimas, Tipo_lesion, Caso, Costo_total)
+
+# 3. Combinar todo
+base_final <- bind_rows(victimas_casos, caso2_hospital)
+
+# Revisar resultados
+head(base_final)
+
+
+
+
+```
+
+```{r}
+library(dplyr)
+
+# Expandir cada víctima a todas las ambulancias posibles
+victimas_expandidas <- victimas %>%
+  mutate(Tipo_lesion = tolower(`Tipo de lesión`)) %>%
+  rowwise() %>%
+  # Obtener todas las ambulancias posibles para su tipo de lesión
+  do(
+    tibble(
+      Año = .$Año,
+      Tipo_lesion = .$Tipo_lesion,
+      Caso = case_when(
+        .$Tipo_lesion == "muerte" ~ 1, #Muere al instante
+        .$Tipo_lesion %in% c("herido leve", "herido grave") ~ 3, #Sobrevive al accidentes, pero con discapacidad permanente, o ambas discapacidades 
+        .$Tipo_lesion %in% c("herido leve") ~ 4, #Sobrevive al accidente, con discapacidad temporal
+        .$Tipo_lesion == "ileso" ~ 5,
+        TRUE ~ NA_real_
+      )
+    ) %>%
+      left_join(
+        costo_lesion %>% filter(Tipo_lesion == .$Tipo_lesion) %>%
+          select(Tipo_lesion, `Tipo de Ambulancia`, Costo_total),
+        by = "Tipo_lesion"
+      ) %>%
+      mutate(n_victimas = 1)
+  ) %>%
+  ungroup()
+
+```
+
+```{r}
+head(victimas_expandidas)
+dim(victimas_expandidas)
+```
+
+```{r}
+caso2_hospital_exp <- comparacion %>%
+  filter(!is.na(Fallecidos_Hospital)) %>%
+  rowwise() %>%
+  do(
+    tibble(
+      Año = .$Año,
+      n_victimas = .$Fallecidos_Hospital,
+      Tipo_lesion = "muerte",
+      Caso = 2 #Muere en traslado u hospital
+    ) %>%
+      left_join(
+        costo_lesion %>% filter(Tipo_lesion == "muerte") %>%
+          select(Tipo_lesion, `Tipo de Ambulancia`, Costo_total),
+        by = "Tipo_lesion"
+      )
+  ) %>%
+  ungroup()
+
+```
+
+```{r}
+base_final <- bind_rows(victimas_expandidas, caso2_hospital_exp)
+```
+
+```{r}
+table(base_final$Caso)
+```
+
+```{r}
+
+base_final %>%
+  group_by(Tipo_lesion) %>%
+  summarise(Costo_promedio = mean(Costo_total))
+
+```
+
+```{r}
+#Costo promedio por lesion
+costo_lesion <- costo_lesion %>%
+  mutate(
+    Costo_total = as.numeric(gsub(",", "", Costo_total))
+  )
+costo_promedio <- costo_lesion %>%
+  group_by(Tipo_lesion) %>%
+  summarise(Costo_promedio = mean(Costo_total, na.rm = TRUE))
+costo_promedio
+```
+
+#Costos distintos (ver este)
+```{r}
+library(dplyr)
+
+#  Normalizar texto de lesiones
+victimas_limpia <- victimas %>%
+  mutate(
+    Tipo_lesion = tolower(`Tipo de lesión`)
+  )
+
+#  Crear los casos 1, 3, 4 y 5 desde víctimas
+victimas_casos <- victimas_limpia %>%
+  mutate(
+    Caso = case_when(
+      Tipo_lesion == "muerte" ~ 1,            # Caso 1: Muere al instante
+      Tipo_lesion == "herido grave" ~ 3,      # Caso 3: Discapacidad permanente
+      Tipo_lesion == "herido leve" ~ 4,       # Caso 4: Discapacidad temporal 
+      Tipo_lesion == "ileso" ~ 5,             # Caso 5: Sin lesión
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  left_join(
+    costo_lesion %>% select(Tipo_lesion, `Tipo de Ambulancia`, Costo_total),
+    by = "Tipo_lesion"
+  ) %>%
+  mutate(n_victimas = 1)
+costo_lesion <- costo_lesion %>%
+  mutate(Costo_total = as.numeric(Costo_total))
+
+#  Caso 2: muere en hospital o traslado
+caso2_hospital <- comparacion %>%
+  filter(!is.na(Fallecidos_Hospital) & Fallecidos_Hospital > 0) %>%
+  rowwise() %>%
+  do(
+    tibble(
+      Año = .$Año,
+      Tipo_lesion = "muerte",
+      n_victimas = .$Fallecidos_Hospital,
+      Caso = 2,
+      Costo_total = costo_lesion %>%
+        filter(Tipo_lesion == "muerte") %>%
+        summarise(Costo_total = mean(Costo_total, na.rm = TRUE)) %>%
+        pull(Costo_total),
+      `Tipo de Ambulancia` = NA
+    )
+  ) %>%
+  ungroup()
+
+#  Unir todos los casos (1 al 5)
+base_final <- bind_rows(victimas_casos, caso2_hospital) %>%
+  mutate(Caso = as.integer(Caso))
+
+
+# Verificar distribución
+table(base_final$Caso, useNA = "ifany")
+
+```
+
+#(Ver aca) (IMPORTANTE)
+```{r}
+library(dplyr)
+library(scales)
+
+# ============================
+# 1. Identificar la ambulancia más probable por tipo de lesión
+# Prioridad: Tipo C > Tipo B > Tipo A > Rescate > Aérea
+# ============================
+ambulancia_probable <- costo_lesion %>%
+  mutate(prioridad = case_when(
+    `Tipo de Ambulancia` == "Ambulancia Tipo C" ~ 1,
+    `Tipo de Ambulancia` == "Ambulancia Tipo B" ~ 2,
+    `Tipo de Ambulancia` == "Ambulancia Tipo A" ~ 3,
+    `Tipo de Ambulancia` == "Vehículo de Rescate" ~ 4,
+    `Tipo de Ambulancia` == "Ambulancia Aérea" ~ 5
+  )) %>%
+  group_by(Tipo_lesion) %>%
+  arrange(prioridad) %>%
+  slice(1) %>%
+  ungroup() %>%
+  select(Tipo_lesion, `Tipo de Ambulancia`, Costo_total)
+
+# ============================
+# 2. Base de víctimas con casos 1, 3, 4 y 5
+# ============================
+victimas_casos <- victimas %>%
+  mutate(Tipo_lesion = tolower(`Tipo de lesión`)) %>%
+  mutate(Caso = case_when(
+    Tipo_lesion == "muerte" ~ 1, #Muere
+    Tipo_lesion == "herido grave" ~ 2,#Discapacidad permanente
+    Tipo_lesion == "herido leve" ~ 3,#Discapacidad temporal
+    Tipo_lesion == "ileso" ~ 4, #Vivw
+    TRUE ~ NA_real_
+  )) %>%
+  left_join(ambulancia_probable, by = "Tipo_lesion") %>%
+  mutate(n_victimas = 1)
+
+# ============================
+# 3. Caso 4: combinación de herido leve + herido grave
+# ============================
+#costo_ambas <- costo_lesion %>%
+ # filter(Tipo_lesion %in% c("herido leve", "herido grave")) %>%
+  #summarise(Costo_total = mean(Costo_total, na.rm = TRUE)) %>%
+  #pull(Costo_total)
+
+
+# ============================
+# 4. Caso 2: muere en hospital o traslado
+# ============================
+costo_muerte <- costo_lesion %>%
+  filter(Tipo_lesion == "muerte") %>%
+  summarise(Costo_total = mean(Costo_total, na.rm = TRUE)) %>%
+  pull(Costo_total)
+
+#caso2_hospital <- comparacion %>%
+  #filter(!is.na(Fallecidos_Hospital) & Fallecidos_Hospital > 0) %>%
+ # rowwise() %>%
+  #do(
+    #tibble(
+      #Año = .$Año,
+      #Tipo_lesion = "muerte",
+      #n_victimas = .$Fallecidos_Hospital,
+      #Caso = 2,
+      #Costo_total = costo_muerte,
+      #Tipo de Ambulancia` = NA
+    #)
+ # ) %>%
+  #ungroup()
+
+# ============================
+# 5. Unir todos los casos
+# ============================
+base_final <- bind_rows(victimas_casos) %>%
+  mutate(Caso = as.integer(Caso))
+
+# ============================
+# 6. Calcular costo total y promedio por víctima por caso
+# ============================
+costo_por_victima <- base_final %>%
+  group_by(Caso) %>%
+  summarise(
+    Costo_total = sum(Costo_total * n_victimas, na.rm = TRUE),
+    Total_victimas = sum(n_victimas)
+  ) %>%
+  mutate(Costo_por_victima = Costo_total / Total_victimas) %>%
+  ungroup()
+
+# ============================
+# 7. Mostrar resultados en formato legible
+# ============================
+costo_por_victima %>%
+  mutate(
+    Costo_total = scales::number(Costo_total, big.mark = ","),
+    Costo_por_victima = scales::number(Costo_por_victima, big.mark = ",")
+  )
+
+
+```
+
+
+
+```{r}
+table(base_final$Caso)
+```
+
+
+
+```{r}
+# calcular costo por victima por caso
+library(dplyr)
+library(scales)
+
+# === 1. Asegurarnos que Costo_total sea numérico ===
+base_final <- base_final %>%
+  mutate(Costo_total = as.numeric(gsub(",", "", Costo_total)))
+
+# === 2. Calcular costo promedio por víctima para cada caso ===
+costo_por_victima_caso <- base_final %>%
+  group_by(Caso) %>%
+  summarise(Costo_promedio_victima = mean(Costo_total, na.rm = TRUE)) %>%
+  ungroup()
+
+# === 3. Mostrar resultados con formato legible ===
+costo_por_victima_caso %>%
+  mutate(Costo_promedio_victima = number(Costo_promedio_victima, big.mark = ","))
+
+
+```
+
+
+#Incorporando edad (ignorar)
+```{r}
+victimas$`Edad quinquenal`
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+# 1. Distribución de edades de muertes en sitio por año
+edad_dist <- victimas %>%
+  filter(`Tipo de lesión`== "Muerte") %>%
+  group_by(Año, `Edad quinquenal`) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(Año) %>%
+  mutate(freq = n / sum(n)) %>%
+  ungroup()
+
+# 2. Crear víctimas de hospital (Caso 2) usando la distribución de edades
+hospital_victimas <- comparacion %>%
+  select(Año, Fallecidos_Hospital) %>%
+  filter(Fallecidos_Hospital > 0) %>%
+  rowwise() %>%
+  do({
+    año <- .$Año
+    n_hosp <- .$Fallecidos_Hospital
+    
+    # Distribuir según frecuencias de edades en sitio
+    dist_año <- edad_dist %>% filter(Año == año)
+    n_por_edad <- round(dist_año$freq * n_hosp)
+    
+    tibble(
+      Año = año,
+      `Edad quinquenal` = dist_año$`Edad quinquenal`,
+      Tipo_lesion = "muerte",
+      Caso = 2,
+      n_victimas = n_por_edad,
+      Costo_total = costo_lesion %>% filter(Tipo_lesion == "muerte") %>% pull(Costo_total)
+    )
+  }) %>%
+  ungroup() %>%
+  filter(n_victimas > 0)
+
+# 3. Expandir cada fila por número de víctimas
+hospital_victimas_exp <- hospital_victimas %>%
+  uncount(n_victimas)
+
+# 4. Combinar con las víctimas originales (sitio, heridos, ilesos)
+base_final <- victimas %>%
+  mutate(
+    Tipo_lesion = tolower(Tipo.de.lesión),
+    Caso = case_when(
+      Tipo_lesion == "muerte" ~ 1,
+      Tipo_lesion %in% c("herido leve", "herido grave") ~ 3,
+      Tipo_lesion == "ileso" ~ 4,
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  left_join(costo_lesion %>% select(Tipo_lesion, Costo_total), by = "Tipo_lesion") %>%
+  bind_rows(hospital_victimas_exp)
+
+# Revisar resultados
+base_final %>% group_by(Caso) %>% summarise(total = n())
+
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+# --- 1. Distribución de edades de muertes en sitio por año ---
+edad_dist <- victimas %>%
+  filter(str_detect(tolower(`Tipo de lesión`), "muerte")) %>%
+  group_by(Año, `Edad quinquenal`) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(Año) %>%
+  mutate(freq = n / sum(n)) %>%
+  ungroup()
+
+# --- 2. Crear víctimas de hospital (Caso 2) usando la distribución de edades ---
+hospital_victimas <- comparacion %>%
+  select(Año, Fallecidos_Hospital) %>%
+  filter(Fallecidos_Hospital > 0) %>%
+  rowwise() %>%
+  do({
+    año <- .$Año
+    n_hosp <- .$Fallecidos_Hospital
+
+    # Distribuir según frecuencias de edades en sitio
+    dist_año <- edad_dist %>% filter(Año == año)
+    n_por_edad <- round(dist_año$freq * n_hosp)
+
+    # Extraer un solo valor de costo (asegúrate de que 'Tipo_lesion' == "muerte" sea único)
+    costo_muerte <- costo_lesion %>%
+      filter(Tipo_lesion == "muerte") %>%
+      summarise(Costo_total = mean(Costo_total, na.rm = TRUE)) %>%
+      pull(Costo_total)
+
+    tibble(
+      Año = año,
+      `Edad quinquenal` = dist_año$`Edad quinquenal`,
+      Tipo_lesion = "muerte",
+      Caso = 2,
+      n_victimas = n_por_edad,
+      Costo_total = costo_muerte
+    )
+  }) %>%
+  ungroup() %>%
+  filter(n_victimas > 0)
+
+# --- 3. (Opcional) Agregar otros casos (1 a 5) si quieres replicar la lógica ---
+# Por ejemplo:
+casos_final <- base_final %>%
+  filter(!is.na(Caso)) %>%    # eliminar NA
+  filter(Caso %in% 1:5) %>%   # mantener solo casos válidos
+  group_by(Caso) %>%
+  summarise(Costo_total_caso = sum(Costo_total, na.rm = TRUE))
+
+```
+
+#Casos con costo promedio agregando valor de vida 
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+valor_vida <- 3000000  # valor de la vida
+
+# 1. Distribución de edades de muertes en sitio por año
+edad_dist <- victimas %>%
+  filter(`Tipo de lesión`== "Muerte") %>%
+  group_by(Año, `Edad quinquenal`) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(Año) %>%
+  mutate(freq = n / sum(n)) %>%
+  ungroup()
+
+# 2. Crear víctimas de hospital (Caso 2) usando la distribución de edades
+hospital_victimas <- comparacion %>%
+  select(Año, Fallecidos_Hospital) %>%
+  filter(Fallecidos_Hospital > 0) %>%
+  rowwise() %>%
+  do({
+    año <- .$Año
+    n_hosp <- .$Fallecidos_Hospital
+    
+    # Distribuir según frecuencias de edades en sitio
+    dist_año <- edad_dist %>% filter(Año == año)
+    n_por_edad <- round(dist_año$freq * n_hosp)
+    
+    tibble(
+      Año = año,
+      `Edad quinquenal` = dist_año$`Edad quinquenal`,
+      Tipo_lesion = "muerte",
+      Caso = 2,
+      n_victimas = n_por_edad,
+      Costo_total = costo_lesion %>% filter(Tipo_lesion == "muerte") %>% pull(Costo_total) + valor_vida
+    )
+  }) %>%
+  ungroup() %>%
+  filter(n_victimas > 0)
+
+# 3. Expandir cada fila por número de víctimas hospital
+hospital_victimas_exp <- hospital_victimas %>%
+  uncount(n_victimas)
+
+# 4. Preparar víctimas originales (sitio, heridos, ilesos)
+victimas_preparadas <- victimas %>%
+  mutate(
+    Tipo_lesion = tolower(Tipo.de.lesión),
+    Caso = case_when(
+      Tipo_lesion == "muerte" ~ 1,
+      Tipo_lesion %in% c("herido leve", "herido grave") ~ 3,
+      Tipo_lesion == "ileso" ~ 4,
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  left_join(costo_lesion %>% select(Tipo_lesion, Costo_total), by = "Tipo_lesion") %>%
+  # Agregar valor de la vida al caso 1
+  mutate(Costo_total = ifelse(Caso == 1, Costo_total + valor_vida, Costo_total))
+
+# 5. Combinar todo en la base final
+base_final <- bind_rows(victimas_preparadas, hospital_victimas_exp)
+
+# 6. Revisar resultados por caso
+base_final %>%
+  group_by(Caso) %>%
+  summarise(total = n(), Costo_total_promedio = mean(Costo_total), Costo_total_suma = sum(Costo_total))
+
+```
+Columna	Significado
+Caso	El tipo de caso: 1 = muere en sitio, 2 = atención en hospital y muere, 3 = atención en hospital y vive (heridos), 4 = ileso, NA = casos sin asignación correcta.
+total	Número de registros (víctimas) asignadas a ese caso.
+Costo_total_promedio	Promedio del Costo_total por víctima dentro de ese caso. Incluye: gastos médicos + ambulancia + valor de la vida (para casos 1 y 2).
+Costo_total_suma	Suma total del Costo_total de todas las víctimas dentro de ese caso.
+
+#Costo con valor de vida
+```{r}
+library(dplyr)
+
+# Valor de la vida
+valor_vida <- 3000000
+
+# 1. Preparar la base principal
+victimas_preparadas <- victimas %>%
+  mutate(
+    Tipo_lesion = tolower(`Tipo de lesión`),
+    Caso = case_when(
+      Tipo_lesion == "muerte" ~ 1,           # todas las muertes en sitio
+      Tipo_lesion == "herido grave" ~ 2,
+      Tipo_lesion == "herido leve" ~ 3,
+      Tipo_lesion == "ileso" ~ 4,
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  # 2. Agregar costo base según tipo de lesión
+  left_join(costo_lesion %>% select(Tipo_lesion, Costo_total), by = "Tipo_lesion") %>%
+  # 3. Sumar valor de la vida para casos de muerte
+  mutate(Costo_total = ifelse(Caso %in% c(1,2), Costo_total + valor_vida, Costo_total))
+
+# 4. Calcular Costo_total_promedio por Caso
+promedios_costo <- victimas_preparadas %>%
+  group_by(Caso) %>%
+  summarise(Costo_total_promedio = mean(Costo_total, na.rm = TRUE), .groups = "drop")
+
+# 5. Unir promedio a la base original sin cambiar filas
+base_final <- victimas_preparadas %>%
+  left_join(promedios_costo, by = "Caso")
+
+# 6. Revisar resultados
+head(base_final)
+base_final %>%
+  group_by(Caso) %>%
+  summarise(
+    Total_victimas = n(),
+    Costo_total_promedio = mean(Costo_total),
+    Costo_total_suma = sum(Costo_total)
+  )
+#base final es la que tiene todo
+
+```
+
+```{r}
+library(dplyr)
+
+# Valor de la vida
+valor_vida <- 3000000
+
+# 1. Preparar la base principal
+victimas_preparadas <- victimas %>%
+  mutate(
+    Tipo_lesion = tolower(`Tipo de lesión`),
+    Caso = case_when(
+      Tipo_lesion == "muerte" ~ 1,           # todas las muertes en sitio
+      Tipo_lesion == "herido grave" ~ 2,
+      Tipo_lesion == "herido leve" ~ 3,
+      Tipo_lesion == "ileso" ~ 4,
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  # 2. Agregar costo base según tipo de lesión
+  left_join(costo_lesion %>% select(Tipo_lesion, Costo_total), by = "Tipo_lesion") %>%
+  # 3. Sumar valor de la vida para casos de muerte o herido grave
+  mutate(Costo_total = ifelse(Caso %in% c(1, 2), Costo_total + valor_vida, Costo_total))
+
+# 4. Calcular Costo_total_promedio por Año y Caso
+promedios_costo <- victimas_preparadas %>%
+  group_by(Año, Caso) %>%
+  summarise(Costo_total_promedio = mean(Costo_total, na.rm = TRUE), .groups = "drop")
+
+# 5. Unir promedio a la base original sin cambiar filas
+base_final <- victimas_preparadas %>%
+  left_join(promedios_costo, by = c("Año", "Caso"))
+
+# 6. Revisar resultados
+head(base_final)
+
+# 7. Resumen por Año y Caso
+base_final %>%
+  group_by(Año, Caso) %>%
+  summarise(
+    Total_victimas = n(),
+    Costo_total_promedio = mean(Costo_total, na.rm = TRUE),
+    Costo_total_suma = sum(Costo_total, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+#⚠️ Propuesta para tu modelo
+Dado que no hay datos oficiales específicos, puedes usar una aproximación razonable, explicando las hipótesis. Por ejemplo:
+Caso 1 (Muere al instante): asignar un valor alto que combine el costo del tratamiento, el valor de la vida perdida y el impacto económico/social.
+Caso 2 (Discapacidad permanente): asignar un valor elevado pero menor que muerte, que incluya tratamiento de por vida, reducción de capacidad laboral, etc.
+Caso 3 (Discapacidad funcional / menos severa): valor intermedio.
+Caso 4 (Sin discapacidad): valorar únicamente el tratamiento inmediato, sin secuelas económicas importantes.
+Por ejemplo podrías usar:
+Muere al instante → ₡ 3.000.000 (como lo pusiste)
+Discapacidad permanente → quizá ₡ 2.000.000
+Discapacidad funcional → ₡ 1.000.000
+Sin discapacidad → ₡ 200.000
+Estas cifras son arbitrarias pero explicadas con tus supuestos.
+
+#Con valores traidos a la actualidad  (ESTE)
+```{r}
+library(dplyr)
+library(stringr)
+library(scales)
+
+# --- Ajusta estos valores si quieres otras magnitudes ---
+valor_por_caso <- c(
+  "1" = 5680000,   # muerte instantánea
+  "2" = 2964000,   # discapacidad permanente
+  "3" = 2964000,   # discapacidad funcional (temporal / menor)
+  "4" = 0          # sin discapacidad: no agregar valor de vida
+)
+
+# --- 1) Normalizar y revisar columnas básicas ---
+# Asumo que 'victimas' y 'costo_lesion' ya están en el entorno.
+# Normalizamos texto en victimas
+victimas2 <- victimas %>%
+  mutate(Tipo_lesion = str_trim(tolower(`Tipo de lesión`)))
+
+# --- 2) Preparar costo médico promedio por Tipo_lesion ---
+# Aseguramos que en costo_lesion exista Costo_total numérico (si no: convertir)
+costo_lesion2 <- costo_lesion %>%
+  mutate(Costo_total = as.numeric(gsub(",", "", as.character(Costo_total)))) %>%
+  group_by(Tipo_lesion = tolower(str_trim(Tipo_lesion))) %>% 
+  summarise(Costo_medico_prom = mean(Costo_total, na.rm = TRUE), .groups = "drop")
+
+# --- 3) Mapear Tipo_lesion a Caso (1..4) ---
+# Según tu definición:
+# 1 = muerte al instante
+# 2 = vive con discapacidad permanente (herido grave)
+# 3 = vive con discapacidad funcional (herido leve)
+# 4 = vive sin discapacidad (ileso)
+victimas3 <- victimas2 %>%
+  mutate(
+    Caso = case_when(
+      Tipo_lesion == "muerte"        ~ 1L,
+      Tipo_lesion == "herido grave"  ~ 2L,
+      Tipo_lesion == "herido leve"   ~ 3L,
+      Tipo_lesion == "ileso"         ~ 4L,
+      TRUE                           ~ 4L  # si hay otros valores, los tratamos como 'sin discapacidad' (ajustable)
+    )
+  )
+
+# --- 4) Unir costo médico promedio a cada víctima ---
+victimas4 <- victimas3 %>%
+  left_join(costo_lesion2, by = c("Tipo_lesion")) 
+
+# Si hay filas sin Costo_medico_prom (NA), poner 0 para evitar problemas al sumar:
+victimas4 <- victimas4 %>%
+  mutate(Costo_medico_prom = ifelse(is.na(Costo_medico_prom), 0, Costo_medico_prom))
+
+# --- 5) Asignar valor económico según Caso y calcular costo final por víctima ---
+victimas4 <- victimas4 %>%
+  mutate(
+    Valor_vida = as.numeric(valor_por_caso[as.character(Caso)]),
+    # si quieres que el valor de la vida se aplique solo a ciertos casos, ya lo está: caso 1,2,3 (4 -> 0)
+    Costo_total_final = Costo_medico_prom + Valor_vida,
+    n_victima = 1
+  )
+
+# --- 6) Agregar por Caso para obtener total y promedio por víctima ---
+resumen_por_caso <- victimas4 %>%
+  group_by(Caso) %>%
+  summarise(
+    Costo_total = sum(Costo_total_final, na.rm = TRUE),
+    Total_victimas = sum(n_victima, na.rm = TRUE),
+    Costo_por_victima = ifelse(Total_victimas>0, Costo_total / Total_victimas, 0),
+    .groups = "drop"
+  ) %>%
+  arrange(Caso)
+
+# --- 7) Formato para copiar a Word (columnas legibles) ---
+resumen_para_word <- resumen_por_caso %>%
+  mutate(
+    Costo_total = number(Costo_total, big.mark = ",", accuracy = 1),
+    Costo_por_victima = number(Costo_por_victima, big.mark = ",", accuracy = 1)
+  )
+
+# Imprimir tabla lista para copiar
+print(resumen_para_word)
+
+# Si quieres además ver todos los casos incluso si alguno no existe en la data:
+todos_casos <- tibble(Caso = 1:4) %>%
+  left_join(resumen_para_word, by = "Caso") %>%
+  mutate(
+    Costo_total = ifelse(is.na(Costo_total), "0", as.character(Costo_total)),
+    Total_victimas = ifelse(is.na(Total_victimas), 0, Total_victimas),
+    Costo_por_victima = ifelse(is.na(Costo_por_victima), "0", as.character(Costo_por_victima))
+  )
+
+print(todos_casos)
+
+```
+

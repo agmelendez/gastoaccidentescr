@@ -1,0 +1,191 @@
+---
+title: "AVAD"
+author: "Fernanda"
+date: "2025-08-20"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+AVAD=AVPP+AVD
+AVD=I×PD×L
+
+
+```{r}
+library(readr)
+personas <-  read_delim("~/Desktop/PRACTICA /CIOdD/DATOS/COSEVI/personas 2024.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r}
+str(personas)
+```
+
+```{r}
+library(dplyr)
+
+discapacitados <- personas %>%
+  filter(`Tipo de lesión` %in% c("Herido grave", "Herido leve"))
+```
+
+```{r}
+discapacitados_año <- discapacitados %>%
+  group_by(Año) %>%
+  summarise(Total_discapacitados = n())
+totaldiscapacitados <- discapacitados_año$Total_discapacitados;totaldiscapacitados
+```
+
+```{r}
+library(dplyr)
+avd <- discapacitados %>%
+  mutate(
+    DW = case_when( #Pesos
+      `Tipo de lesión` == "Herido grave" ~ 0.6,
+      `Tipo de lesión` == "Herido leve"  ~ 0.24
+    ),
+    L = case_when( #L se refiere al tiempo que paso con la discapacidad
+      `Tipo de lesión` == "Herido grave" ~ 0.5,
+      `Tipo de lesión` == "Herido leve"  ~ 0.0833
+    ),
+    AVD_persona = 1 * DW * L   # AVD por persona
+  )
+
+
+```
+
+```{r}
+AVD <- discapacitados %>%
+  mutate(
+    DW = case_when(
+      `Tipo de lesión` == "Herido grave" ~ 0.6,
+      `Tipo de lesión` == "Herido leve"  ~ 0.24
+    ),
+    L = case_when(
+      `Tipo de lesión` == "Herido grave" ~ 0.5,
+      `Tipo de lesión` == "Herido leve"  ~ 0.0833
+    ),
+    AVD_persona = DW * L
+  ) %>%
+  group_by(Año) %>%
+  summarise(
+    AVD_total = sum(AVD_persona, na.rm = TRUE),
+    AVD_promedio = mean(AVD_persona, na.rm = TRUE)
+  )
+AVD
+#AVD_total →  corresponde a los cálculos de carga de enfermedad
+#AVD_promedio →  indicador por persona
+```
+
+```{r}
+library(dplyr)
+library(dplyr)
+
+#AVPP
+avpp <- data.frame(
+  Año = 2017:2024,
+  AVPP_total = c(35185, 32709, 31269, 22211, 27862, 32571, 36719,37080),
+  Fallecidos = c(885, 829, 792, 581, 730, 854, 932,926),
+  Media_AVPP = c(39.8, 39.5, 39.5, 38.2, 38.2, 38.1, 39.4,40)
+)
+
+AVAD <- avpp %>%
+  left_join(AVD, by = "Año") %>%
+  mutate(
+    AVAD_total = AVPP_total + AVD_total,
+    Media_AVAD = AVAD_total / totaldiscapacitados #Años perdidos ajustados por discapacidad por cada persona discapacitada
+  )
+
+AVAD_resumen <- AVAD %>%
+  select(Año, AVD_total, AVD_promedio, AVAD_total, Media_AVAD)
+
+print(AVAD_resumen)
+```
+
+#Proyecciones 2024 y 2025
+```{r}
+# --- Serie histórica de AVD ---
+serie_avd <- ts(AVD$AVD_total, start = 2017, frequency = 1)
+
+# Modelo de suavizamiento exponencial (ETS)
+modelo_ets_avd <- ets(serie_avd)
+pred_ets_avd <- forecast(modelo_ets_avd, h = 2)  # Proyección 2024 y 2025
+
+# --- Cálculo de tendencia lineal con los últimos 3 años (2021-2023) ---
+ultimos_avd <- tail(AVD$AVD_total, 3)
+tendencia_anual_avd <- (ultimos_avd[3] - ultimos_avd[1]) / 2  # cambio promedio por año
+
+# --- Aplicar tendencia sobre las predicciones ETS ---
+avd_base <- as.numeric(pred_ets_avd$mean)
+avd_tendencia <- avd_base
+avd_tendencia[1] <- avd_base[1] + tendencia_anual_avd  # Ajuste 2024
+avd_tendencia[2] <- avd_tendencia[1] + tendencia_anual_avd  # Ajuste 2025
+
+# --- Calcular intervalos de confianza ajustados ---
+LI <- pmax(0, avd_tendencia - (avd_base - as.numeric(pred_ets_avd$lower[,2])))
+LS <- avd_tendencia + (as.numeric(pred_ets_avd$upper[,2]) - avd_base)
+
+# --- Tabla final de proyecciones AVD ---
+proyecciones_avd <- data.frame(
+  Año = 2024:2025,
+  AVD_total = round(avd_tendencia, 0),
+  LI = round(LI, 0),
+  LS = round(LS, 0)
+)
+
+# --- Proyecciones de AVPP (ejemplo) ---
+proy_avpp <- data.frame(
+  Año = 2024:2025,
+  AVPP_total = c(35643, 40072),
+  Fallecidos = c(901, 1002)
+)
+
+# --- Calcular AVAD (AVPP + AVD) ---
+proy_avad <- proy_avpp %>%
+  left_join(proyecciones_avd, by = "Año") %>%
+  mutate(
+    AVAD_total = AVPP_total + AVD_total,
+    Media_AVAD = AVAD_total / totaldiscapacitados
+  )
+
+# --- Mostrar resultados finales ---
+print(proy_avad)
+
+
+```
+
+```{r}
+library(dplyr)
+
+# Calcular promedio histórico de personas discapacitadas
+promedio_discapacitados <- discapacitados %>%
+  group_by(Año) %>%
+  summarise(Total_discapacitados = n()) %>%
+  summarise(promedio = mean(Total_discapacitados)) %>%
+  pull(promedio)
+
+# Agregar AVD_promedio a las proyecciones
+proy_avad <- proy_avad %>%
+  mutate(
+    AVD_promedio = AVD_total / promedio_discapacitados
+  ) %>%
+  select(Año, AVD_total, AVD_promedio, AVAD_total, Media_AVAD)
+
+print(proy_avad)
+
+```
+
+```{r}
+# Si tenés la tabla 'discapacitados' con la variable totaldiscapacitados
+totaldiscapacitados_prom <- mean(totaldiscapacitados, na.rm = TRUE)
+totaldiscapacitados_prom
+totaldiscapacitados_prom <-18838.14
+
+proy_avad <- proy_avpp %>%
+  left_join(proyecciones_avd, by = "Año") %>%
+  mutate(
+    AVAD_total = AVPP_total + AVD_total,
+    Media_AVAD = AVAD_total / totaldiscapacitados_prom
+  )
+proy_avad
+```
+

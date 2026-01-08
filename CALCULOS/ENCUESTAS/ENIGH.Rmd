@@ -1,0 +1,33 @@
+---
+title: "ENIGH"
+author: "Fernanda"
+date: "2025-09-08"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+library(haven)
+Enigh <- read_sav("~/Desktop/Practica I/CIOdD/DATOS/ENIGH 20/Enigh2018_CreaVar_ Hogar_PUBLICA.sav")
+```
+
+```{r}
+names(Enigh)
+```
+
+```{r}
+table(Enigh$H056_DISPONE_VEHICULO) #1 tiene vehiculo 
+```
+
+```{r}
+table(Enigh$H057_CANT_VEHICULOS)
+```
+
+```{r}
+table(Enigh$H058_AUTOS_HOGAR)
+```
+
+```{r}
+table(Enigh$H059_MOTOS_HOGAR)
+```
+

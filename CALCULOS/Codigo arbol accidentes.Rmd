@@ -1,0 +1,693 @@
+---
+title: "ACCIDENTES"
+author: "Fernanda"
+date: "2025-06-11"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r}
+library(tibble)
+library(collapsibleTree)
+
+accidentes_df <- tribble(    
+  ~Nivel1,                  ~Nivel2,                          ~Nivel3, 
+  # 1. Colisión con motocicleta
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Automóvil",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "ATV(Cuadraciclo)",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Bicimoto (≤50 cc)",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Bicimoto (>50 cc)",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Motocicleta",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "UTV (Side by Side)",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Transporte colectivo - Microbús/Buseta",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Transporte colectivo - Autobús",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Vehículo de emergencia",
+  
+  # 2. Colisión entre vehículos
+"Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Automóvil",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Motocicleta",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Ciclista",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Transporte colectivo - Autobús",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Transporte colectivo - Microbús/Buseta",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Bicimoto (≤50 cc)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Bicimoto (>50 cc)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs ATV(Cuadraciclo)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs UTV",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Motocicleta vs Motocicleta",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Autobús vs Transporte colectivo - Autobús",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Autobús vs Transporte colectivo - Microbús/Buseta",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Autobús vs Bicimoto (≤50 cc)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Autobús vs Bicimoto (>50 cc)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Autobús vs ATV(Cuadraciclo)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Autobús vs UTV",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Autobús vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Autobús vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Autobús vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Microbús/Buseta vs Transporte colectivo - Microbús/Buseta",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Microbús/Buseta vs Bicimoto (≤50 cc)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Microbús/Buseta vs Bicimoto (>50 cc)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Microbús/Buseta vs ATV(Cuadraciclo)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Microbús/Buseta vs UTV",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Microbús/Buseta vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Microbús/Buseta vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo - Microbús/Buseta vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (≤50 cc) vs Bicimoto (≤50 cc)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (≤50 cc) vs Bicimoto (>50 cc)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (≤50 cc) vs ATV(Cuadraciclo)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (≤50 cc) vs UTV",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (≤50 cc) vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (≤50 cc) vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (≤50 cc) vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (>50 cc) vs Bicimoto (>50 cc)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (>50 cc) vs ATV(Cuadraciclo)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (>50 cc) vs UTV",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (>50 cc) vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (>50 cc) vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (>50 cc) vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "ATV(Cuadraciclo) vs ATV(Cuadraciclo)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "ATV(Cuadraciclo) vs UTV",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "ATV(Cuadraciclo) vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "ATV(Cuadraciclo) vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "ATV(Cuadraciclo) vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "UTV vs UTV",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "UTV vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "UTV vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "UTV vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de carga liviana vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de carga liviana vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de carga liviana vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de carga pesada vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de carga pesada vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de emergencia vs Vehículo de emergencia",
+
+  # 3. Vuelco
+
+  "Tipos de accidentes", "3. Vuelco",    "Automóvil",
+  "Tipos de accidentes", "3. Vuelco",    "UTV",
+ "Tipos de accidentes", "3. Vuelco",    "Cuadraciclo ATV",
+  "Tipos de accidentes", "3. Vuelco",    "Bicimoto (≤50 cc)",
+  "Tipos de accidentes", "3. Vuelco",    "Bicimoto (>50 cc)",
+  "Tipos de accidentes", "3. Vuelco",    "Motocicleta",
+  "Tipos de accidentes", "3. Vuelco",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "3. Vuelco",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "3. Vuelco",    "Transporte colectivo - Microbús/Buseta",
+  "Tipos de accidentes", "3. Vuelco",    "Transporte colectivo - Autobús",
+  "Tipos de accidentes", "3. Vuelco",    "Vehículo de emergencia",
+  "Tipos de accidentes", "3. Vuelco",    "Ciclista",
+
+  # 4. Colisión con objeto fijo
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Poste",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Muro",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Árbol",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Barrera de seguridad",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Señal de tránsito",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Roca / Derrumbe",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Medidor / Poste eléctrico",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Valla publicitaria",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Bordillo / Cordon",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Guardarraíl / Baranda metálica",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Obstáculo en vía (escombros, basura)",
+  
+  # 5. Atropello de animal
+
+  "Tipos de accidentes", "5. Atropello de animal",    "Automóvil",
+  "Tipos de accidentes","5. Atropello de animal",    "ATV(Cuadraciclo)",
+  "Tipos de accidentes", "5. Atropello de animal",    "Bicimoto (≤50 cc)",
+  "Tipos de accidentes", "5. Atropello de animal",    "Bicimoto (>50 cc)",
+  "Tipos de accidentes", "5. Atropello de animal",    "Motocicleta",
+  "Tipos de accidentes", "5. Atropello de animal",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "5. Atropello de animal",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "5. Atropello de animal",    "UTV (Side by Side)",
+  "Tipos de accidentes", "5. Atropello de animal",    "Transporte colectivo - Microbús/Buseta",
+  "Tipos de accidentes", "5. Atropello de animal",    "Transporte colectivo - Autobús",
+  "Tipos de accidentes", "5. Atropello de animal",    "Vehículo de emergencia",
+  "Tipos de accidentes", "5. Atropello de animal",    "Ciclista",
+  
+# Categoría 6. Atropello de persona (todos los vehículos)
+
+  "Tipos de accidentes",  "6. Atropello de persona",    "Automóvil",
+  "Tipos de accidentes", "6. Atropello de persona",    "ATV(Cuadraciclo)",
+  "Tipos de accidentes", "6. Atropello de persona",    "Bicimoto (≤50 cc)",
+  "Tipos de accidentes", "6. Atropello de persona",    "Bicimoto (>50 cc)",
+  "Tipos de accidentes", "6. Atropello de persona",    "Motocicleta",
+  "Tipos de accidentes", "6. Atropello de persona",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "6. Atropello de persona",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "6. Atropello de persona",    "UTV (Side by Side)",
+  "Tipos de accidentes", "6. Atropello de persona",    "Transporte colectivo - Microbús/Buseta",
+  "Tipos de accidentes", "6. Atropello de persona",    "Transporte colectivo - Autobús",
+  "Tipos de accidentes", "6. Atropello de persona",    "Vehículo de emergencia",
+  "Tipos de accidentes", "6. Atropello de persona",    "Ciclista",
+  
+  # Categoría 7. Colisión con bicicleta (todos los vehículos)
+
+  "Tipos de accidentes",  "7. Colisión con bicicleta",    "Automóvil",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "ATV(Cuadraciclo)",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Bicimoto (≤50 cc)",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Bicimoto (>50 cc)",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Motocicleta",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "UTV (Side by Side)",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Transporte colectivo - Microbús/Buseta",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Transporte colectivo - Autobús",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Vehículo de emergencia",
+
+  
+  # Categoría 8. Salida de la vía (todos los vehículos)
+
+  "Tipos de accidentes", "8. Salida de la vía",    "Bicicleta",
+  "Tipos de accidentes", "8. Salida de la vía",   "Automóvil",
+  "Tipos de accidentes", "8. Salida de la vía",    "ATV(Cuadraciclo)",
+  "Tipos de accidentes", "8. Salida de la vía",    "Bicimoto (≤50 cc)",
+  "Tipos de accidentes", "8. Salida de la vía",    "Bicimoto (>50 cc)",
+  "Tipos de accidentes", "8. Salida de la vía",    "Motocicleta",
+  "Tipos de accidentes", "8. Salida de la vía",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "8. Salida de la vía",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "8. Salida de la vía",    "UTV (Side by Side)",
+  "Tipos de accidentes", "8. Salida de la vía",    "Transporte colectivo - Microbús/Buseta",
+  "Tipos de accidentes", "8. Salida de la vía",    "Transporte colectivo - Autobús",
+  "Tipos de accidentes", "8. Salida de la vía",    "Vehículo de emergencia",
+
+  # Categoría 9. Caída de ocupante (todos los vehículos)
+
+  "Tipos de accidentes", "9. Caída de ocupante",    "Bicicleta",
+  "Tipos de accidentes", "9. Caída de ocupante",   "Automóvil",
+  "Tipos de accidentes", "9. Caída de ocupante",    "ATV(Cuadraciclo)",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Bicimoto (≤50 cc)",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Bicimoto (>50 cc)",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Motocicleta",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "9. Caída de ocupante",    "UTV (Side by Side)",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Transporte colectivo - Microbús/Buseta",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Transporte colectivo - Autobús",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Vehículo de emergencia",
+  # Categoría 10. Objeto sobre vehículo (tipos de objetos)
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Árbol caído",
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Poste o estructura",
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Carga de otro vehículo",
+"Tipos de accidentes", "10. Objeto sobre vehículo",        "Objeto de otro vehículo",
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Roca",
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Señal de tránsito",
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Escombros",
+  # Categoría 11. Otros
+   "Tipos de accidentes", "11. Otros",      "Colisión múltiple",
+   "Tipos de accidentes", "11. Otros",      "Incendio de vehículo",
+   "Tipos de accidentes", "11. Otros",      "Objeto sobre peatón",
+   "Tipos de accidentes", "11. Otros",      "Fallas mecánicas sin colisión",
+   "Tipos de accidentes", "11. Otros",      "Colisión entre vehículo y tren",
+   "Tipos de accidentes", "11. Otros",      "Atropello a peatón por parte del tren",
+   
+   # Categoría 12, Desconocido 
+   "Tipos de accidentes", "12. Desconocido",      "Accidentes con datos incompletos o inconsistentes",
+   "Tipos de accidentes", "12. Desconocido",      "Casos sin testigos ni evidencia directa",
+   "Tipos de accidentes", "12. Desconocido",      "Accidentes en que no se puede determinar la dinámica del       hecho",
+   "Tipos de accidentes", "12. Desconocido",      "Errores de codificación",
+
+  )
+
+# Graficar árbol colapsable y vertical
+collapsibleTree(
+  accidentes_df,
+  hierarchy = c("Nivel1", "Nivel2", "Nivel3"),
+  root = "Accidentes de Tránsito",
+  width = 1000,
+  height = 800,
+  zoomable = TRUE,
+  fill = "lightblue",
+  fontSize = 10
+)
+```
+
+```{r}
+nrow(accidentes_df)
+```
+
+
+##RE AGRUPAMIENTO##
+
+
+```{r}
+library(tibble)
+library(collapsibleTree)
+
+accidentes_df <- tribble(    
+  ~Nivel1,                  ~Nivel2,                          ~Nivel3, 
+  # 1. Colisión con motocicleta
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Automóvil",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Vehículo todo terreno (ATV/UTV)", #nuevo 
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Bicimoto (todos)",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Motocicleta",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Transporte colectivo (microbús/bus/ buseta)", #nuevo
+  "Tipos de accidentes", "1. Colisión con motocicleta",    "Vehículo de emergencia",
+  
+    # 2. Colisión entre vehículos
+"Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Automóvil",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Motocicleta",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Ciclista",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Transporte colectivo (microbús/bus/ buseta)", #nuevo
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Bicimoto (todo cc)", #nuevo
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Vehículo todo terreno (ATV/UTV)",#nuevo
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Motocicleta vs Motocicleta",
+  "Tipos de accidentes", "2. Colisión entre vehículos", " Transporte colectivo (microbús/bus/ buseta) vs  Transporte colectivo (microbús/bus/ buseta)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", " Transporte colectivo (microbús/bus/ buseta) vs Bicimoto (todos)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo (microbús/bus/ buseta) vs Vehículo todo terreno (ATV/UTV)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo (microbús/bus/ buseta) vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo (microbús/bus/ buseta) vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Transporte colectivo (microbús/bus/ buseta) vs Vehículo de emergencia",
+
+
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (todo cc) vs Bicimoto (todo cc)",
+
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (todo cc)  vs Vehículo todo terreno (ATV/UTV)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (todo cc)  vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (todo cc)  vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Bicimoto (todo cc)  vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo todo terreno (ATV/UTV) vs Vehículo todo terreno (ATV/UTV)",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo todo terreno (ATV/UTV) vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo todo terreno (ATV/UTV) vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo todo terreno (ATV/UTV) vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de carga liviana vs Vehículo de carga liviana",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de carga liviana vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de carga liviana vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de carga pesada vs Vehículo de carga pesada",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de carga pesada vs Vehículo de emergencia",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Vehículo de emergencia vs Vehículo de emergencia",
+  # 3. Vuelco
+  "Tipos de accidentes", "3. Vuelco",    "Automóvil",
+  "Tipos de accidentes", "3. Vuelco",    "Vehículo todo terreno (ATV/UTV)",
+  "Tipos de accidentes", "3. Vuelco",    "Bicimoto (todo cc) ",
+  "Tipos de accidentes", "3. Vuelco",    "Motocicleta",
+  "Tipos de accidentes", "3. Vuelco",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "3. Vuelco",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "3. Vuelco",    "Transporte colectivo (microbús/bus/ buseta)",
+  "Tipos de accidentes", "3. Vuelco",    "Vehículo de emergencia",
+
+  # 4. Colisión con objeto fijo
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Poste",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Muro",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Árbol",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Señal de tránsito",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Roca / Derrumbe",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Medidor / Poste eléctrico",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Valla publicitaria",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Bordillo / Cordon",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Barrera de seguridad",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Obstáculo en vía (escombros, basura)",
+# 5. Atropello de animal
+  "Tipos de accidentes", "5. Atropello de animal",    "Automóvil",
+  "Tipos de accidentes","5. Atropello de animal",    "Vehículo todo terreno (ATV/UTV)",
+  "Tipos de accidentes", "5. Atropello de animal",    "Bicimoto  (todos cc)",
+  "Tipos de accidentes", "5. Atropello de animal",    "Motocicleta",
+  "Tipos de accidentes", "5. Atropello de animal",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "5. Atropello de animal",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "5. Atropello de animal",    "Transporte colectivo (microbús/bus/ buseta)",
+  "Tipos de accidentes", "5. Atropello de animal",    "Vehículo de emergencia",
+  
+# Categoría 6. Atropello de persona (todos los vehículos)
+
+  "Tipos de accidentes",  "6. Atropello de persona",   "Automóvil",
+  "Tipos de accidentes", "6. Atropello de persona",    "Vehículo todo terreno (ATV/UTV)",
+  "Tipos de accidentes", "6. Atropello de persona",    "Bicimoto (todas cc)",
+  "Tipos de accidentes", "6. Atropello de persona",    "Motocicleta",
+  "Tipos de accidentes", "6. Atropello de persona",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "6. Atropello de persona",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "6. Atropello de persona",    "Transporte colectivo (microbús/bus/ buseta)",
+  "Tipos de accidentes", "6. Atropello de persona",    "Vehículo de emergencia",
+  "Tipos de accidentes", "6. Atropello de persona",    "Ciclista",
+  
+  # Categoría 7. Colisión con bicicleta (todos los vehículos)
+
+  "Tipos de accidentes",  "7. Colisión con bicicleta",    "Automóvil",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Vehículo todo terreno (ATV/UTV)",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Bicimoto (todas cc)",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Motocicleta",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Transporte colectivo (microbús/bus/ buseta)",
+  "Tipos de accidentes", "7. Colisión con bicicleta",    "Vehículo de emergencia",
+  
+  # Categoría 8. Salida de la vía (todos los vehículos)
+
+  "Tipos de accidentes", "8. Salida de la vía",    "Bicicleta",
+  "Tipos de accidentes", "8. Salida de la vía",   "Automóvil",
+  "Tipos de accidentes", "8. Salida de la vía",    "Vehículo todo terreno (ATV/UTV)",
+  "Tipos de accidentes", "8. Salida de la vía",    "Bicimoto (todas cc)",
+  "Tipos de accidentes", "8. Salida de la vía",    "Motocicleta",
+  "Tipos de accidentes", "8. Salida de la vía",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "8. Salida de la vía",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "8. Salida de la vía",    "Transporte colectivo (microbús/bus/ buseta)",
+  "Tipos de accidentes", "8. Salida de la vía",    "Vehículo de emergencia",
+
+  # Categoría 9. Caída de ocupante (todos los vehículos)
+
+  "Tipos de accidentes", "9. Caída de ocupante",    "Bicicleta",
+  "Tipos de accidentes", "9. Caída de ocupante",   "Automóvil",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Vehículo todo terreno (ATV/UTV)",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Bicimoto (todas cc)",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Motocicleta",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Vehículo de carga liviana",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Vehículo de carga pesada",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Transporte colectivo (microbús/bus/ buseta)",
+  "Tipos de accidentes", "9. Caída de ocupante",    "Vehículo de emergencia",
+  # Categoría 10. Objeto sobre vehículo (tipos de objetos)
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Árbol caído",
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Poste o estructura",
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Carga de otro vehículo",
+"Tipos de accidentes", "10. Objeto sobre vehículo",        "Objeto de otro vehículo",
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Roca",
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Señal de tránsito",
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Escombros",
+  # Categoría 11. Otros
+   "Tipos de accidentes", "11. Otros",      "Colisión múltiple",
+   "Tipos de accidentes", "11. Otros",      "Incendio de vehículo",
+   "Tipos de accidentes", "11. Otros",      "Objeto sobre peatón",
+   "Tipos de accidentes", "11. Otros",      "Fallas mecánicas sin colisión",
+   "Tipos de accidentes", "11. Otros",      "Colisión entre vehículo y tren",
+   "Tipos de accidentes", "11. Otros",      "Atropello a peatón por parte del tren",
+   
+   # Categoría 12, Desconocido 
+   "Tipos de accidentes", "12. Desconocido",      "Accidentes con datos incompletos o inconsistentes",
+   "Tipos de accidentes", "12. Desconocido",      "Casos sin testigos ni evidencia directa",
+   "Tipos de accidentes", "12. Desconocido",      "Accidentes en que no se puede determinar la dinámica del       hecho",
+   "Tipos de accidentes", "12. Desconocido",      "Errores de codificación",
+
+  )
+
+# Graficar árbol colapsable y vertical
+collapsibleTree(
+  accidentes_df,
+  hierarchy = c("Nivel1", "Nivel2", "Nivel3"),
+  root = "Accidentes de Tránsito",
+  width = 1000,
+  height = 800,
+  zoomable = TRUE,
+  fill = "lightblue",
+  fontSize = 10
+)
+
+```
+
+#DOS
+```{r}
+accidentes_df <- tribble(
+  ~Nivel1,                  ~Nivel2,                          ~Nivel3,                           ~Nivel4, 
+  # Categoría 1. Colisión con motocicleta
+"Tipos de accidentes", "1. Colisión con motocicleta", "Automóvil", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Automóvil", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Automóvil", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Automóvil", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Automóvil", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Autobús", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Autobús", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Autobús", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Autobús", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Autobús", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+  
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Camión", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Camión", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Camión", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Camión", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Camión", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Cuadraciclo", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Cuadraciclo", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Cuadraciclo", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Cuadraciclo", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Cuadraciclo", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (todo cc) ", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (todo cc) ", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (todo cc) ", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (todo cc) ", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (todo cc) ", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (>50 cc)", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (>50 cc)", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (>50 cc)", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (>50 cc)", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (>50 cc)", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Motocicleta", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Motocicleta", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Motocicleta", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Motocicleta", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Motocicleta", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga liviana", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga liviana", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga liviana", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga liviana", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga liviana", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga pesada", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga pesada", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga pesada", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga pesada", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga pesada", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "UTV (Side by Side)", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "UTV (Side by Side)", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "UTV (Side by Side)", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "UTV (Side by Side)", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "UTV (Side by Side)", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+   # 2. Colisión entre vehículos
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Automóvil",     "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Automóvil",     "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Automóvil",     "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Automóvil",     "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Automóvil",     "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+  
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Autobús",        "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Autobús",        "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Autobús",        "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Autobús",        "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Autobús",        "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+  
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Camión",         "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Camión",         "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Camión",         "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Camión",         "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "2. Colisión entre vehículos", "Automóvil vs Camión",         "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+  # 3. Vuelco
+  "Tipos de accidentes", "3. Vuelco",                      "Automóvil","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "3. Vuelco",                      "Camión","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "3. Vuelco",                      "Autobús","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "3. Vuelco",                      "Cuadraciclo / Vehículo rústico","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "3. Vuelco",                      "Bicimoto (≤50 cc)","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "3. Vuelco",                      "Bicimoto (>50 cc)","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "3. Vuelco",                      "Motocicleta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "3. Vuelco",                      "Vehículo de carga liviana","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "3. Vuelco",                      "Vehículo de carga pesada","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "3. Vuelco",                      "UTV (Side by Side)","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  # 4. Colisión con objeto fijo
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Poste",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Muro",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Árbol",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Barrera de seguridad",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Señal de tránsito",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Roca / Derrumbe",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Medidor / Poste eléctrico",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Valla publicitaria",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Bordillo / Cordon",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Guardarraíl / Baranda metálica",
+  "Tipos de accidentes", "4. Colisión con objeto fijo",    "Obstáculo en vía (escombros, basura)",
+  
+  # 5. Atropello de animal
+  "Tipos de accidentes", "5. Atropello de animal",         "Automóvil","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "5. Atropello de animal",         "Motocicleta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "5. Atropello de animal",         "Autobús","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "5. Atropello de animal",         "Buseta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "5. Atropello de animal",         "Camión","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "5. Atropello de animal",         "Bicimoto","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "5. Atropello de animal",         "Cuadraciclo / ATV","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "5. Atropello de animal",         "Vehículo rústico","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "5. Atropello de animal",         "Vehículo de emergencia","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "5. Atropello de animal",         "Tractor / Maquinaria agrícola","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  
+# Categoría 6. Atropello de persona (todos los vehículos)
+ "Tipos de accidentes", "6. Atropello de persona",        "Automóvil","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Motocicleta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Autobús","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Buseta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Camión","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Bicimoto","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Bicicleta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Peatón atropellado por otro peatón (caída, empujón)","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Cuadraciclo / ATV","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Vehículo rústico","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Vehículo de emergencia","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Tractor / Maquinaria agrícola","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "6. Atropello de persona",        "Vehículo de tránsito lento (motocultor, etc.)","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  
+  # Categoría 7. Colisión con bicicleta (todos los vehículos)
+  "Tipos de accidentes", "7. Colisión con bicicleta",      "Automóvil","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "7. Colisión con bicicleta",      "Motocicleta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "7. Colisión con bicicleta",      "Bicimoto","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "7. Colisión con bicicleta",      "Buseta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "7. Colisión con bicicleta",      "Autobús","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "7. Colisión con bicicleta",      "Camión","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "7. Colisión con bicicleta",      "Cuadraciclo / ATV","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "7. Colisión con bicicleta",      "Vehículo rústico","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "7. Colisión con bicicleta",      "Vehículo de emergencia","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "7. Colisión con bicicleta",      "Vehículo de tránsito lento (maquinaria agrícola, motoniveladora, etc.)","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  
+  # Categoría 8. Salida de la vía (todos los vehículos)
+  "Tipos de accidentes", "8. Salida de la vía",            "Automóvil","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "8. Salida de la vía",            "Motocicleta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "8. Salida de la vía",            "Bicimoto","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "8. Salida de la vía",            "Buseta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "8. Salida de la vía",            "Autobús","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "8. Salida de la vía",            "Camión","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "8. Salida de la vía",            "Cuadraciclo / ATV","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "8. Salida de la vía",            "Vehículo rústico","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "8. Salida de la vía",            "Vehículo de emergencia","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "8. Salida de la vía",            "Vehículo de tránsito lento (maquinaria agrícola, motoniveladora, etc.)",
+  "Tipos de accidentes", "8. Salida de la vía",            "Tractor","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "8. Salida de la vía",            "Bicicleta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  # Categoría 9. Caída de ocupante (todos los vehículos)
+  "Tipos de accidentes", "9. Caída de ocupante",           "Motocicleta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "9. Caída de ocupante",           "Bicimoto","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "9. Caída de ocupante",           "Cuadraciclo / ATV","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "9. Caída de ocupante",           "Buseta","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "9. Caída de ocupante",           "Autobús","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "9. Caída de ocupante",           "Camión","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "9. Caída de ocupante",           "Vehículo rústico","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "9. Caída de ocupante",           "Vehículo de emergencia","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "9. Caída de ocupante",           "Vehículo de tránsito lento (maquinaria agrícola, motoniveladora, etc.)","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  # Categoría 10. Objeto sobre vehículo (tipos de objetos)
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Árbol caído","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Poste o estructura","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Carga de otro vehículo","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Roca","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Señal de tránsito","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  "Tipos de accidentes", "10. Objeto sobre vehículo",      "Escombros","ileso:No se requiere ambulancia. Registro policial y liberación de vía.", 
+  
+)
+
+# Graficar árbol colapsable y vertical
+collapsibleTree(
+  accidentes_df,
+  hierarchy = c("Nivel1", "Nivel2", "Nivel3", "Nivel4"),
+  root = "Tipos de accidentes",
+  width = 2000,
+  height = 800,
+  zoomable = TRUE,
+  fill = "lightblue",
+  fontSize = 15
+)
+```
+
+
+#SOLO UNO
+```{r}
+Colisión_con_motocicleta<-  tribble(
+  ~Nivel1,~Nivel2,~Nivel3, ~Nivel4,
+  # 1. Colisión con motocicleta
+  "Tipos de accidentes","1. Colisión con motocicleta", "Automóvil", "ileso:No se requiere ambulancia, el Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Automóvil", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Automóvil", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Automóvil", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Automóvil", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+  
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Autobús", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Autobús", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Autobús", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Autobús", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Autobús", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+  
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Camión", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Camión", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Camión", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Camión", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Camión", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Cuadraciclo", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Cuadraciclo", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Cuadraciclo", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Cuadraciclo", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Cuadraciclo", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (≤50 cc)", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (≤50 cc)", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (≤50 cc)", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (≤50 cc)", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (≤50 cc)", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (>50 cc)", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (>50 cc)", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (>50 cc)", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (>50 cc)", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Bicimoto (>50 cc)", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Motocicleta", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Motocicleta", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Motocicleta", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Motocicleta", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Motocicleta", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga liviana", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga liviana", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga liviana", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga liviana", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga liviana", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga pesada", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga pesada", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga pesada", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga pesada", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "Vehículo de carga pesada", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico.",
+
+  "Tipos de accidentes", "1. Colisión con motocicleta", "UTV (Side by Side)", "ileso:No se requiere ambulancia. Registro policial y liberación de vía.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "UTV (Side by Side)", "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "UTV (Side by Side)", "grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "UTV (Side by Side)", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.",
+  "Tipos de accidentes", "1. Colisión con motocicleta", "UTV (Side by Side)", "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico."
+  )
+
+```
+
+
+```{r}
+# Graficar árbol colapsable y vertical
+# Obtener categorías únicas
+niveles_unicos <- unique(Colisión_con_motocicleta$Nivel4)
+
+# Crear vector de colores para las categorías únicas (mismo orden que niveles_unicos)
+colores_unicos <- rep("lightblue", length(niveles_unicos))
+colores_unicos[niveles_unicos == "ileso:No se requiere ambulancia. Registro policial y liberación de vía."] <- "green"
+colores_unicos[niveles_unicos == "leve:Ambulancia básica con paramédicos. Evaluación en sitio y posible traslado."] <- "yellow"
+colores_unicos[niveles_unicos %in% c("grave:Ambulancia avanzada con médico. Traslado inmediato a hospital.", "fallecido:Coordinación con morgue judicial. Policía y OIJ en el sitio.")] <- "red"
+colores_unicos[niveles_unicos == "rescate:Unidad de rescate requerida. Liberación con equipo hidráulico."] <- "orange"
+
+# Mapeo colores para cada fila
+color_map <- setNames(colores_unicos, niveles_unicos)
+Colisión_con_motocicleta$color <- color_map[Colisión_con_motocicleta$Nivel4]
+
+# Graficar
+collapsibleTree(
+  Colisión_con_motocicleta,
+  hierarchy = c("Nivel1", "Nivel2", "Nivel3", "Nivel4"),
+  root = "Tipos de accidentes",
+  width = 2000,
+  height = 800,
+  zoomable = TRUE,
+  fill = "blue",
+  fontSize = 10
+)
+
+```
+
+

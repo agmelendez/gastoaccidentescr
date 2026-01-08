@@ -1,0 +1,100 @@
+---
+title: "Untitled"
+author: "Fernanda"
+date: "2025-08-19"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+library(readr)
+basepersonas <- read_delim("~/Desktop/Practica I/CIOdD/DATOS/COSEVI/Base de personas  en accidentes 2017_ 2023_UTF8.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+
+```{r}
+library(dplyr)
+
+discapacitados2017 <- basepersonas %>%
+  filter(
+    Año == 2017,
+    `Tipo de lesión` %in% c("Herido grave", "Herido leve")
+  )
+
+```
+
+```{r}
+table(discapacitados2017$`Tipo de lesión`)
+```
+
+
+```{r}
+library(dplyr)
+
+discapacitados2018 <- basepersonas %>%
+  filter(
+    Año == 2018,
+    `Tipo de lesión` %in% c("Herido grave", "Herido leve")
+  )
+
+```
+
+```{r}
+library(dplyr)
+
+discapacitados2019 <- basepersonas %>%
+  filter(
+    Año == 2019,
+    `Tipo de lesión` %in% c("Herido grave", "Herido leve")
+  )
+
+```
+
+
+```{r}
+library(dplyr)
+
+discapacitados2020 <- basepersonas %>%
+  filter(
+    Año == 2020,
+    `Tipo de lesión` %in% c("Herido grave", "Herido leve")
+  )
+
+```
+
+
+
+```{r}
+library(dplyr)
+
+discapacitados2021 <- basepersonas %>%
+  filter(
+    Año == 2021,
+    `Tipo de lesión` %in% c("Herido grave", "Herido leve")
+  )
+
+```
+
+
+```{r}
+library(dplyr)
+
+discapacitados2022 <- basepersonas %>%
+  filter(
+    Año == 2022,
+    `Tipo de lesión` %in% c("Herido grave", "Herido leve")
+  )
+
+```
+
+```{r}
+library(dplyr)
+
+discapacitados2023 <- basepersonas %>%
+  filter(
+    Año == 2023,
+    `Tipo de lesión` %in% c("Herido grave", "Herido leve")
+  )
+
+```
