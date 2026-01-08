@@ -453,12 +453,13 @@
     </header>
 
     <div class="container">
-        <!-- NAVEGACIÓN PRINCIPAL CON 4 PESTAÑAS -->
+        <!-- NAVEGACIÓN PRINCIPAL CON 5 PESTAÑAS -->
         <div class="main-tabs">
             <button class="main-tab-button active" onclick="switchMainTab('inicio', this)">🏠 Inicio</button>
             <button class="main-tab-button" onclick="switchMainTab('resultados', this)">📈 Resultados</button>
             <button class="main-tab-button" onclick="switchMainTab('metodologia', this)">🔬 Metodología</button>
             <button class="main-tab-button" onclick="switchMainTab('validacion', this)">✅ Validación</button>
+            <button class="main-tab-button" onclick="switchMainTab('github', this)">💻 GitHub</button>
         </div>
 
         <!-- ========== SECCIÓN 1: INICIO ========== -->
@@ -606,6 +607,35 @@
                         </tfoot>
                     </table>
                     <p class="projection-note">* Los valores de 2025 son proyecciones basadas en tendencias históricas y modelos estadísticos desarrollados en el estudio.</p>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>📚 Recursos y Documentos</h2>
+
+                <div class="alert alert-info">
+                    <strong>Acceda a los documentos oficiales del estudio:</strong> Descargue el informe completo y la infografía con los datos más relevantes.
+                </div>
+
+                <div class="grid">
+                    <div class="card" style="cursor: pointer;" onclick="window.open('Informe Final Costos salud y economicos Accidentes CIOdD-UCR.pdf', '_blank')">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
+                        <h3>Informe Final Completo</h3>
+                        <div class="unit" style="margin: 1rem 0;">Estudio completo sobre costos en salud y económicos de accidentes de tránsito en Costa Rica</div>
+                        <div class="status-badge status-pass">PDF - Descargar</div>
+                    </div>
+
+                    <div class="card" style="cursor: pointer;" onclick="window.open('Infografía.pdf', '_blank')">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                        <h3>Infografía Resumen</h3>
+                        <div class="unit" style="margin: 1rem 0;">Visualización gráfica de los principales hallazgos del estudio</div>
+                        <div class="status-badge status-pass">PDF - Descargar</div>
+                    </div>
+                </div>
+
+                <div class="recommendation-box" style="margin-top: 1rem;">
+                    <h4>💡 Sugerencia</h4>
+                    <p>Para acceder al repositorio completo con todos los datos, scripts y documentación técnica, visite la pestaña <strong>💻 GitHub</strong> donde encontrará información detallada sobre cómo contribuir y utilizar los recursos disponibles.</p>
                 </div>
             </section>
         </section>
@@ -1548,6 +1578,230 @@
 
                 <div class="alert alert-success" style="margin-top: 1rem;">
                     <strong>Resumen:</strong> 5/5 criterios cumplidos. Estudio demuestra robustez estadística suficiente para servir como base de políticas públicas en seguridad vial.
+                </div>
+            </section>
+        </section>
+
+        <!-- ========== SECCIÓN 5: GITHUB ========== -->
+        <section id="github" class="main-tab-content">
+            <section class="section">
+                <h2>💻 Repositorio en GitHub</h2>
+
+                <div class="alert alert-info">
+                    <strong>Código Abierto y Transparencia:</strong> Este proyecto está disponible públicamente en GitHub, permitiendo acceso completo a los datos, scripts de análisis y documentación técnica.
+                </div>
+
+                <div class="comparison-container">
+                    <div class="comparison-item">
+                        <h3>📦 Contenido del Repositorio</h3>
+                        <div class="list-item"><strong>Datos brutos:</strong> Bases de datos utilizadas en el análisis (formato CSV, Excel)</div>
+                        <div class="list-item"><strong>Scripts:</strong> Código R y Python para procesamiento y análisis estadístico</div>
+                        <div class="list-item"><strong>Documentación:</strong> Informe completo, infografías y guías metodológicas</div>
+                        <div class="list-item"><strong>Visualizaciones:</strong> Gráficos, tablas y dashboards interactivos</div>
+                        <div class="list-item"><strong>Sitio web:</strong> Código fuente de esta página (HTML, CSS, JavaScript)</div>
+                    </div>
+
+                    <div class="comparison-item">
+                        <h3>🎯 Propósito del Repositorio</h3>
+                        <div class="list-item"><strong>Reproducibilidad:</strong> Permite verificar y replicar todos los análisis</div>
+                        <div class="list-item"><strong>Transparencia:</strong> Acceso público a metodología y datos</div>
+                        <div class="list-item"><strong>Colaboración:</strong> Facilita contribuciones de otros investigadores</div>
+                        <div class="list-item"><strong>Educación:</strong> Recurso para estudiantes y profesionales</div>
+                        <div class="list-item"><strong>Mejora continua:</strong> Actualizaciones con nuevos datos</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>🔗 Acceso al Repositorio</h2>
+
+                <div class="grid">
+                    <div class="card" style="cursor: pointer;" onclick="window.open('https://github.com/agmelendez/gastoaccidentescr', '_blank')">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🌐</div>
+                        <h3>Repositorio Principal</h3>
+                        <div class="unit" style="margin: 1rem 0;">Acceda al repositorio completo en GitHub</div>
+                        <div class="status-badge status-pass">github.com/agmelendez/gastoaccidentescr</div>
+                    </div>
+
+                    <div class="card">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📥</div>
+                        <h3>Clonar Repositorio</h3>
+                        <div class="unit" style="margin: 1rem 0; font-family: monospace; font-size: 0.8rem;">
+                            git clone https://github.com/agmelendez/gastoaccidentescr.git
+                        </div>
+                        <div class="status-badge status-pass">Git</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>📁 Estructura del Repositorio</h2>
+
+                <div style="background: var(--color-light); padding: 1.5rem; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
+                    <div style="margin-bottom: 0.5rem;">📂 <strong>gastoaccidentescr/</strong></div>
+                    <div style="margin-left: 1.5rem; margin-bottom: 0.5rem;">├── 📄 <strong>index.html</strong> - Sitio web principal</div>
+                    <div style="margin-left: 1.5rem; margin-bottom: 0.5rem;">├── 📄 <strong>Informe Final Costos salud y economicos Accidentes CIOdD-UCR.pdf</strong> - Informe completo</div>
+                    <div style="margin-left: 1.5rem; margin-bottom: 0.5rem;">├── 📄 <strong>Infografía.pdf</strong> - Infografía resumen</div>
+                    <div style="margin-left: 1.5rem; margin-bottom: 0.5rem;">├── 📂 <strong>data/</strong> - Bases de datos originales</div>
+                    <div style="margin-left: 1.5rem; margin-bottom: 0.5rem;">├── 📂 <strong>scripts/</strong> - Código de análisis (R, Python)</div>
+                    <div style="margin-left: 1.5rem; margin-bottom: 0.5rem;">├── 📂 <strong>visualizations/</strong> - Gráficos y tablas</div>
+                    <div style="margin-left: 1.5rem; margin-bottom: 0.5rem;">└── 📄 <strong>README.md</strong> - Documentación del repositorio</div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>🤝 Cómo Contribuir</h2>
+
+                <div class="tabs">
+                    <button class="tab-button active" onclick="switchTab('github-contribuir', this)">Contribuciones</button>
+                    <button class="tab-button" onclick="switchTab('github-issues', this)">Reportar Problemas</button>
+                    <button class="tab-button" onclick="switchTab('github-datos', this)">Uso de Datos</button>
+                </div>
+
+                <div id="github-contribuir" class="tab-content active" style="margin-top: 1rem;">
+                    <h3 style="color: var(--color-primary);">Proceso de Contribución</h3>
+
+                    <div class="recommendation-box">
+                        <h4>1. Fork del Repositorio</h4>
+                        <p>Crea tu propia copia del repositorio en tu cuenta de GitHub haciendo clic en "Fork".</p>
+                    </div>
+
+                    <div class="recommendation-box">
+                        <h4>2. Crea una Rama (Branch)</h4>
+                        <p style="font-family: monospace; background: #f3f4f6; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+                            git checkout -b feature/mi-contribucion
+                        </p>
+                    </div>
+
+                    <div class="recommendation-box">
+                        <h4>3. Realiza tus Cambios</h4>
+                        <p>Mejora el código, corrige errores, actualiza documentación o agrega nuevas funcionalidades.</p>
+                    </div>
+
+                    <div class="recommendation-box">
+                        <h4>4. Commit y Push</h4>
+                        <p style="font-family: monospace; background: #f3f4f6; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+                            git commit -m "Descripción de cambios"<br>
+                            git push origin feature/mi-contribucion
+                        </p>
+                    </div>
+
+                    <div class="recommendation-box">
+                        <h4>5. Pull Request</h4>
+                        <p>Crea un Pull Request en GitHub describiendo tus cambios y su propósito.</p>
+                    </div>
+
+                    <div class="alert alert-success" style="margin-top: 1rem;">
+                        <strong>Tipos de Contribuciones Bienvenidas:</strong>
+                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.9rem;">
+                            <li>✓ Correcciones de errores en datos o cálculos</li>
+                            <li>✓ Mejoras en visualizaciones</li>
+                            <li>✓ Actualización con datos más recientes</li>
+                            <li>✓ Traducción a otros idiomas</li>
+                            <li>✓ Optimización de código</li>
+                            <li>✓ Documentación adicional</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="github-issues" class="tab-content" style="margin-top: 1rem;">
+                    <h3 style="color: var(--color-primary);">Reportar Problemas o Sugerencias</h3>
+
+                    <div class="alert alert-info">
+                        <strong>¿Encontraste un error o tienes una sugerencia?</strong> Utiliza el sistema de Issues de GitHub para reportar problemas o proponer mejoras.
+                    </div>
+
+                    <div class="recommendation-box">
+                        <h4>Cómo Crear un Issue</h4>
+                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.9rem;">
+                            <li><strong>Paso 1:</strong> Ve a la pestaña "Issues" en el repositorio</li>
+                            <li><strong>Paso 2:</strong> Haz clic en "New Issue"</li>
+                            <li><strong>Paso 3:</strong> Describe el problema o sugerencia claramente</li>
+                            <li><strong>Paso 4:</strong> Incluye capturas de pantalla si aplica</li>
+                            <li><strong>Paso 5:</strong> Agrega etiquetas apropiadas (bug, enhancement, documentation)</li>
+                        </ul>
+                    </div>
+
+                    <div class="comparison-container">
+                        <div class="comparison-item">
+                            <h3>Tipos de Issues</h3>
+                            <div class="list-item"><strong>🐛 Bugs:</strong> Errores en datos, cálculos o código</div>
+                            <div class="list-item"><strong>✨ Features:</strong> Nuevas funcionalidades</div>
+                            <div class="list-item"><strong>📚 Documentation:</strong> Mejoras en documentación</div>
+                            <div class="list-item"><strong>❓ Questions:</strong> Preguntas sobre el proyecto</div>
+                        </div>
+
+                        <div class="comparison-item">
+                            <h3>Buenas Prácticas</h3>
+                            <div class="list-item">Busca si el issue ya existe antes de crear uno nuevo</div>
+                            <div class="list-item">Usa títulos descriptivos y claros</div>
+                            <div class="list-item">Proporciona contexto suficiente</div>
+                            <div class="list-item">Sé respetuoso y constructivo</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="github-datos" class="tab-content" style="margin-top: 1rem;">
+                    <h3 style="color: var(--color-primary);">Uso de Datos y Licencia</h3>
+
+                    <div class="recommendation-box">
+                        <h4>📜 Licencia de Uso</h4>
+                        <p>Este proyecto está bajo una licencia de código abierto que permite:</p>
+                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.9rem;">
+                            <li>✓ Uso libre para fines académicos y de investigación</li>
+                            <li>✓ Modificación y redistribución con atribución</li>
+                            <li>✓ Uso en proyectos comerciales con atribución</li>
+                            <li>✓ Creación de trabajos derivados</li>
+                        </ul>
+                    </div>
+
+                    <div class="recommendation-box">
+                        <h4>📝 Cómo Citar este Trabajo</h4>
+                        <p style="background: #f3f4f6; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; font-size: 0.85rem;">
+                            <strong>Formato APA:</strong><br>
+                            Quesada Chavarría, M. F. (2025). <em>Impacto Económico y en la Salud Pública de los Accidentes de Tránsito en Costa Rica (2017-2025)</em>. Centro de Investigación y Observatorio del Desarrollo (CIOdD), Escuela de Estadística, Universidad de Costa Rica. Recuperado de https://github.com/agmelendez/gastoaccidentescr
+                        </p>
+                    </div>
+
+                    <div class="alert alert-warning" style="margin-top: 1rem;">
+                        <strong>Requisito de Atribución:</strong> Si utilizas estos datos en tu trabajo, por favor proporciona la cita apropiada y menciona la fuente original.
+                    </div>
+
+                    <div class="recommendation-box">
+                        <h4>💡 Ejemplos de Uso</h4>
+                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.9rem;">
+                            <li><strong>Investigación académica:</strong> Tesis, artículos científicos, proyectos de grado</li>
+                            <li><strong>Políticas públicas:</strong> Diseño de programas de seguridad vial</li>
+                            <li><strong>Educación:</strong> Material didáctico para cursos de estadística o salud pública</li>
+                            <li><strong>Periodismo:</strong> Artículos de investigación sobre seguridad vial</li>
+                            <li><strong>Análisis comparativo:</strong> Estudios con datos de otros países o regiones</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>📞 Contacto y Soporte</h2>
+
+                <div class="comparison-container">
+                    <div class="comparison-item">
+                        <h3>Centro CIOdD</h3>
+                        <div class="list-item"><strong>Institución:</strong> Universidad de Costa Rica</div>
+                        <div class="list-item"><strong>Escuela:</strong> Estadística</div>
+                        <div class="list-item"><strong>Centro:</strong> Observatorio del Desarrollo (CIOdD)</div>
+                        <div class="list-item"><strong>Investigadora:</strong> María Fernanda Quesada Chavarría</div>
+                    </div>
+
+                    <div class="comparison-item">
+                        <h3>Canales de Comunicación</h3>
+                        <div class="list-item" style="cursor: pointer;" onclick="window.open('https://github.com/agmelendez/gastoaccidentescr/issues', '_blank')"><strong>GitHub Issues:</strong> Reportar problemas técnicos</div>
+                        <div class="list-item" style="cursor: pointer;" onclick="window.open('https://github.com/agmelendez/gastoaccidentescr/discussions', '_blank')"><strong>Discussions:</strong> Preguntas y discusiones generales</div>
+                        <div class="list-item"><strong>Email:</strong> Contacto directo con el equipo de investigación</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-success" style="margin-top: 1rem;">
+                    <strong>¡Únete a la Comunidad!</strong> Tu participación ayuda a mejorar la seguridad vial en Costa Rica. Ya sea reportando errores, sugiriendo mejoras o compartiendo el proyecto, cada contribución cuenta.
                 </div>
             </section>
         </section>
